@@ -1,0 +1,283 @@
+package cn.hisaas.huiguanli.ui;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import android.app.Activity;
+import android.view.KeyEvent;
+import android.view.View;
+import android.widget.AdapterView;
+import android.widget.AdapterView.OnItemClickListener;
+import android.widget.GridView;
+import android.widget.SimpleAdapter;
+import cn.hisaas.huiguanli.activity.R;
+import cn.hisaas.huiguanli.app.MainApplication;
+
+public class Keyboard{
+
+//	private int[] tag;
+	private GridView grid;
+	private Activity activity;
+	private KeyCall call;
+	public Keyboard(GridView grid,Activity activity,KeyCall call) {
+		this.grid=grid;
+		grid.setFocusable(false);
+		this.activity=activity;
+		this.call=call;
+		initGrid();
+	}
+	
+	public Keyboard(GridView grid,Activity activity,KeyCall call,int tag) {
+		this.grid=grid;
+		grid.setFocusable(false);
+		this.activity=activity;
+		this.call=call;
+		initJZGrid();
+	}
+
+	private final void initGrid(){
+		grid.setAdapter(getSimpleAdapter());
+		grid.setOnItemClickListener(click);
+	}
+	
+	private final void initJZGrid(){
+		grid.setAdapter(getJZSimpleAdapter());
+		grid.setOnItemClickListener(jzClick);
+	}
+	/**
+	 * 点击监听
+	 */
+	private final OnItemClickListener click=new OnItemClickListener() {
+		@Override
+		public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+			switch(position){
+			case 0://1
+				MainApplication.thread.addValue(KeyEvent.KEYCODE_1);
+				break;
+			case 1://2
+				MainApplication.thread.addValue(KeyEvent.KEYCODE_2);
+				break;
+			case 2://3
+				MainApplication.thread.addValue(KeyEvent.KEYCODE_3);
+				break;
+			case 3://4
+				MainApplication.thread.addValue(KeyEvent.KEYCODE_4);
+				break;
+			case 4://5
+				MainApplication.thread.addValue(KeyEvent.KEYCODE_5);
+				break;
+			case 5://6
+				MainApplication.thread.addValue(KeyEvent.KEYCODE_6);
+				break;
+			case 6://7
+				MainApplication.thread.addValue(KeyEvent.KEYCODE_7);
+				break;
+			case 7://8
+				MainApplication.thread.addValue(KeyEvent.KEYCODE_8);
+				break;
+			case 8://9
+				MainApplication.thread.addValue(KeyEvent.KEYCODE_9);
+				break;
+			case 10://0
+				MainApplication.thread.addValue(KeyEvent.KEYCODE_0);
+				break;
+			case 9://删除
+				MainApplication.thread.addValue(KeyEvent.KEYCODE_DEL);
+				break;
+			case 11://确定
+				if(call!=null){
+					call.call();
+				}
+				break;
+			default:
+				break;
+			}
+		}
+	};
+	
+	/**
+	 * 点击监听
+	 */
+	private final OnItemClickListener jzClick=new OnItemClickListener() {
+		@Override
+		public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+			switch(position){
+			case 0://1
+				MainApplication.thread.addValue(KeyEvent.KEYCODE_1);
+				break;
+			case 1://2
+				MainApplication.thread.addValue(KeyEvent.KEYCODE_2);
+				break;
+			case 2://3
+				MainApplication.thread.addValue(KeyEvent.KEYCODE_3);
+				break;
+			case 3://取消
+				if(call!=null){
+					call.cancel();
+				}
+				break;
+			case 4://4
+				MainApplication.thread.addValue(KeyEvent.KEYCODE_4);
+				break;
+			case 5://5
+				MainApplication.thread.addValue(KeyEvent.KEYCODE_5);
+				break;
+			case 6://6
+				MainApplication.thread.addValue(KeyEvent.KEYCODE_6);
+				break;
+			case 7://确认
+				if(call!=null){
+					call.call();
+				}
+				break;
+			case 8://7
+				MainApplication.thread.addValue(KeyEvent.KEYCODE_7);
+				break;
+			case 9://8 
+				MainApplication.thread.addValue(KeyEvent.KEYCODE_8);
+				break;
+			case 10://9
+				MainApplication.thread.addValue(KeyEvent.KEYCODE_9);
+				break;
+			
+			case 11://合计
+				if(call!=null){
+					call.hj();
+				}
+				break;
+			case 12://删除
+				MainApplication.thread.addValue(KeyEvent.KEYCODE_DEL);
+				break;
+			case 13://0
+				MainApplication.thread.addValue(KeyEvent.KEYCODE_0);
+				break;
+			case 14://.
+				MainApplication.thread.addValue(KeyEvent.KEYCODE_PERIOD);
+				break;
+			default:
+				break;
+			}
+		}
+	};
+	private final SimpleAdapter getSimpleAdapter(){
+		List<Map<String, Object>> list=new ArrayList<Map<String,Object>>();
+//		tag=new int[]{'A','B','C','D','E','F','G','H','I','K','J','L'};
+		Map<String, Object> map=null;
+		map=new HashMap<String, Object>();
+		map.put("Text", "1");
+		list.add(map);
+		map=new HashMap<String, Object>();
+		map.put("Text", "2");
+		list.add(map);
+		map=new HashMap<String, Object>();
+		map.put("Text", "3");
+		list.add(map);
+		map=new HashMap<String, Object>();
+		map.put("Text", "4");
+		list.add(map);
+		map=new HashMap<String, Object>();
+		map.put("Text", "5");
+		list.add(map);
+		map=new HashMap<String, Object>();
+		map.put("Text", "6");
+		list.add(map);
+		map=new HashMap<String, Object>();
+		map.put("Text", "7");
+		list.add(map);
+		map=new HashMap<String, Object>();
+		map.put("Text", "8");
+		list.add(map);
+		map=new HashMap<String, Object>();
+		map.put("Text", "9");
+		list.add(map);
+		map=new HashMap<String, Object>();
+		map.put("Text", "删除");
+		list.add(map);
+		map=new HashMap<String, Object>();
+		map.put("Text", "0");
+		list.add(map);
+		map=new HashMap<String, Object>();
+		map.put("Text", "确定");
+		list.add(map);
+		SimpleAdapter adapter = new SimpleAdapter(activity, list,
+				R.layout.keyboard, new String[] {"Text" },
+				new int[] { R.id.num_button });
+		list=null;
+		return adapter;
+	}
+
+	
+	private final SimpleAdapter getJZSimpleAdapter(){
+		List<Map<String, Object>> list=new ArrayList<Map<String,Object>>();
+//		tag=new int[]{'A','B','C','D','E','F','G','H','I','K','J','L'};
+		Map<String, Object> map=null;
+		map=new HashMap<String, Object>();
+		map.put("Text", "1");
+		list.add(map);
+		map=new HashMap<String, Object>();
+		map.put("Text", "2");
+		list.add(map);
+		map=new HashMap<String, Object>();
+		map.put("Text", "3");
+		list.add(map);
+		map=new HashMap<String, Object>();
+		map.put("Text", "取消");
+		list.add(map);
+		map=new HashMap<String, Object>();
+		map.put("Text", "4");
+		list.add(map);
+		map=new HashMap<String, Object>();
+		map.put("Text", "5");
+		list.add(map);
+		map=new HashMap<String, Object>();
+		map.put("Text", "6");
+		list.add(map);
+		map=new HashMap<String, Object>();
+		map.put("Text", "确认");
+		list.add(map);
+		map=new HashMap<String, Object>();
+		map.put("Text", "7");
+		list.add(map);
+		map=new HashMap<String, Object>();
+		map.put("Text", "8");
+		list.add(map);
+		map=new HashMap<String, Object>();
+		map.put("Text", "9");
+		list.add(map);
+		map=new HashMap<String, Object>();
+		map.put("Text", "结账");
+		list.add(map);
+		map=new HashMap<String, Object>();
+		map.put("Text", "删除");
+		list.add(map);
+		map=new HashMap<String, Object>();
+		map.put("Text", "0");
+		list.add(map);
+		map=new HashMap<String, Object>();
+		map.put("Text", ".");
+		list.add(map);
+		SimpleAdapter adapter = new SimpleAdapter(activity, list,
+				R.layout.jz_keyboard, new String[] {"Text" },
+				new int[] { R.id.jz_num_button });
+		list=null;
+		return adapter;
+	}
+	
+	
+	public interface KeyCall{
+		/**
+		 * 确认键
+		 */
+		void call();
+		/**
+		 * 合计键
+		 */
+		void hj();
+		/**
+		 * 取消键
+		 */
+		void cancel();
+	}
+	
+}

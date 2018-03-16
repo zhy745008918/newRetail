@@ -1,0 +1,649 @@
+package cn.hisaas.huiguanli.activity.dialog;
+
+import java.io.UnsupportedEncodingException;
+import java.util.HashMap;
+import java.util.Map;
+import com.alibaba.fastjson.TypeReference;
+import android.content.DialogInterface;
+import android.content.Intent;
+import android.database.sqlite.SQLiteDatabase;
+import android.os.Bundle;
+import android.text.Editable;
+import android.text.TextWatcher;
+import android.view.KeyEvent;
+import android.view.MotionEvent;
+import android.view.View;
+import android.view.View.OnClickListener;
+import android.widget.EditText;
+import android.widget.GridView;
+import android.widget.RadioButton;
+import android.widget.RadioGroup;
+import android.widget.TextView;
+import android.widget.Toast;
+import cn.hisaas.huiguanli.activity.R;
+import cn.hisaas.huiguanli.activity.eum.ResultEnum;
+import cn.hisaas.huiguanli.app.MainApplication;
+import cn.hisaas.huiguanli.db.BaseDb;
+import cn.hisaas.huiguanli.db.async.Update;
+import cn.hisaas.huiguanli.model.OutPay;
+import cn.hisaas.huiguanli.model.PublicMember;
+import cn.hisaas.huiguanli.model.SerachResultOfReturn;
+import cn.hisaas.huiguanli.net.HtClient;
+import cn.hisaas.huiguanli.net.listener.SerachListenerDo;
+import cn.hisaas.huiguanli.parm.SystemParm;
+import cn.hisaas.huiguanli.tools.Cal;
+import cn.hisaas.huiguanli.tools.Encrypt;
+import cn.hisaas.huiguanli.tools.Hide;
+import cn.hisaas.huiguanli.tools.Util;
+import cn.hisaas.huiguanli.ui.Keyboard.KeyCall;
+
+public class JZActivity extends DialogActivity implements KeyCall,OnClickListener{
+
+	private double money;
+	private EditText ysje;
+	private EditText sjfk;
+	private EditText ye;
+	private TextView yeName;
+	private RadioGroup radioGroup;
+	private int id;
+	private PublicMember model;
+	private RadioButton hyb;
+	private RadioButton xjb;
+	private RadioButton dzqb;
+	private double hy=0d;
+	private double xj=0d;
+	private double zl=0d;
+	private double dzq=0d;
+	private TextView message;
+	private GridView grid;
+	private String lsh;
+	private String passWord;//密码
+	
+	@Override
+	protected void onCreate(Bundle savedInstanceState) {
+		super.onCreate(savedInstanceState);
+		setContentView(R.layout.jz);
+		ysje=(EditText)findViewById(R.id.jz_ysje_value);
+		sjfk=(EditText)findViewById(R.id.jz_sjfk_value);
+		ye=(EditText)findViewById(R.id.jz_other_value);
+		ye.setEnabled(false);
+		ye.setFocusable(false);
+		yeName=(TextView)findViewById(R.id.jz_other_name);
+		radioGroup=(RadioGroup)findViewById(R.id.jz_ra);
+		Intent intent=getIntent();
+		lsh=intent.getStringExtra("lsh");
+		money=intent.getDoubleExtra("money", 0d);
+		ysje.setText(String.valueOf(money));
+		ysje.setEnabled(false);
+		ysje.setFocusable(false);
+		model=intent.getParcelableExtra("model");
+		message=(TextView)findViewById(R.id.jz_message);
+		hyb=(RadioButton)findViewById(R.id.jz_hyk);
+		xjb=(RadioButton)findViewById(R.id.jz_xj);
+		dzqb=(RadioButton)findViewById(R.id.jz_dzq);
+		
+		radioGroup.setOnCheckedChangeListener(new RadioGroup.OnCheckedChangeListener() {
+			@Override
+			public void onCheckedChanged(RadioGroup group, int checkedId) {
+				switch(checkedId){
+				case R.id.jz_hyk://会员卡
+					yeName.setText("会员余额");
+					ye.setText(Double.toString(model.getMoney()));
+					id=R.id.jz_hyk;
+					break;
+				case R.id.jz_xj://现金
+					if(grid.getVisibility()==View.GONE){
+						grid.setVisibility(View.VISIBLE);
+						new cn.hisaas.huiguanli.ui.Keyboard(grid, JZActivity.this, JZActivity.this);
+					}
+					ye.setText(null);
+					yeName.setText("找零金额");
+					id=R.id.jz_xj;
+					break;
+				case R.id.jz_dzq://电子券
+					yeName.setText("卡券余额");
+					ye.setText(Double.toString(model.getDzq()));
+					id=R.id.jz_dzq;
+					break;
+				}
+			}
+			
+		});
+		grid=(GridView)findViewById(R.id.jz_input_keyboard);
+		if(model==null){
+			xjb.setChecked(true);
+			ye.setText(null);
+			yeName.setText("找零金额");
+			hyb.setEnabled(false);
+			dzqb.setEnabled(false);
+			message.setVisibility(View.GONE);
+			new cn.hisaas.huiguanli.ui.Keyboard(grid, this, this);
+		}else{
+			grid.setVisibility(View.GONE);
+			if(model.getMoney()>0){
+				yeName.setText("会员余额");
+				ye.setText(String.valueOf(model.getMoney()));
+				hyb.setChecked(true);
+			}else if(model.getDzq()>0){
+				hyb.setEnabled(false);
+				yeName.setText("卡券余额");
+				ye.setText(String.valueOf(model.getMoney()));
+				dzqb.setChecked(true);
+			}else{
+				xjb.setChecked(true);
+				yeName.setText("找零金额");
+				ye.setText(null);
+				hyb.setEnabled(false);
+				dzqb.setEnabled(false);
+				new cn.hisaas.huiguanli.ui.Keyboard(grid, this, this);
+			}
+		}
+		findViewById(R.id.jz_ok).setOnClickListener(this);
+		findViewById(R.id.jz_qx).setOnClickListener(this);
+		sjfk.addTextChangedListener(new TextWatcher() {
+			@Override
+			public void onTextChanged(CharSequence s, int start, int before, int count) {
+			}
+			@Override
+			public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+			}
+			@Override
+			public void afterTextChanged(Editable s) {
+				if(id==R.id.jz_hyk)
+					return;
+				if(id==R.id.jz_dzq)
+					return;
+				try {
+					String s1=s.toString();
+					if(s1.length()==0){
+						ye.setText(null);
+						return;
+					}
+					xj=Double.parseDouble(s1);
+					zl=Cal.sub(Cal.add(dzq, Cal.add(hy,xj)), money);
+					if(zl>=0)
+						ye.setText(String.valueOf(zl));
+					else{
+						ye.setText(null);
+					}
+				} catch (Exception e) {
+					ye.setText(null);
+				}
+			}
+		});
+		Hide.hideSoftInputMethod(sjfk);
+	}
+	@Override
+	public boolean onTouchEvent(MotionEvent event){
+		return true;
+	}
+	@Override
+	public void call() {
+		if(id==R.id.jz_hyk){
+			Toast.makeText(this, "请先录入商品", Toast.LENGTH_SHORT).show();
+		}
+	}
+	@Override
+	public void onClick(View v) {
+		Intent intent;
+		switch (v.getId()) {
+		case R.id.jz_ok:
+			switch (id) {
+			case R.id.jz_dzq:
+				if(model.getDzq()>0){
+					if(passWord==null){
+						intent = new Intent(JZActivity.this, PassWordActivity.class);
+						startActivityForResult(intent, 0);
+					}else{
+						voucherPay(passWord,true);
+					}
+				}else{
+					Toast.makeText(JZActivity.this, "电子券金额为零无法交易", Toast.LENGTH_SHORT).show();
+				}
+				break;
+			case R.id.jz_hyk:
+				if(model.getMoney()>0){
+					if(passWord==null){
+						intent = new Intent(JZActivity.this, PassWordActivity.class);
+				        startActivityForResult(intent, 0);
+					}else{
+						pay(passWord,true);
+					}
+				}else{
+					Toast.makeText(JZActivity.this, "会员卡金额为零无法交易", Toast.LENGTH_SHORT).show();
+				}
+				break;
+			case R.id.jz_xj:
+				close();
+				break;
+			default:
+				break;
+			}
+			break;
+		case R.id.jz_qx:
+			intent=new Intent();
+			setResult(ResultEnum.FAILURE, intent);
+			finish();
+			break;
+		default:
+			break;
+		}
+	}
+	
+	private void showMessage(){
+		
+		if(model!=null){
+			StringBuilder sb=new StringBuilder();
+			if(hy>0){
+				sb.append("会员支付:");
+				sb.append(hy);
+				sb.append(";");
+			}
+			if(dzq>0){
+				sb.append("卡券支付:");
+				sb.append(dzq);
+				sb.append(";");
+			}
+			if(sb.length()>0){
+				sb.delete(sb.length()-1, sb.length());
+				message.setText(sb.toString());
+				sb.setLength(0);
+			}
+		}
+	}
+	/**
+	 * 关闭
+	 */
+	private void close(){
+		
+		showMessage();
+		
+		Intent intent;
+		if(Cal.add(dzq,Cal.add(hy, xj))<money)
+			return;
+		intent=new Intent();
+		intent.putExtra("hy", hy);
+		intent.putExtra("xj", xj);
+		intent.putExtra("zl", zl);
+		intent.putExtra("dzq", dzq);
+		if(model!=null){
+			intent.putExtra("dqye", model.getMoney());
+			intent.putExtra("dqdzq", model.getDzq());
+		}
+		intent.putExtra("lsh", lsh);
+		setResult(ResultEnum.SET_CLOSE, intent);
+		finish();
+	}
+	
+	@Override
+	protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+		switch(resultCode){
+		case ResultEnum.SUCCESS:
+			try {
+				passWord=Encrypt.encrypt(data.getStringExtra("pass"));
+			} catch (Exception e) {
+				passWord=null;
+				Toast.makeText(JZActivity.this, "系统错误;请重试", Toast.LENGTH_SHORT).show();
+				return;
+			}
+			switch (id) {
+			case R.id.jz_dzq:
+				voucherPay(passWord,true);
+				break;
+			case R.id.jz_hyk:
+				pay(passWord,true);
+				break;
+			default:
+				break;
+			}
+			break;
+		case ResultEnum.FAILURE:
+			break;
+		}
+		super.onActivityResult(requestCode, resultCode, data);
+	}
+	/**
+	 * 支付
+	 */
+	private void pay(String pass,boolean isFrist){
+		if(pass==null||pass.length()==0){
+			Toast.makeText(this, "密码为空", Toast.LENGTH_SHORT).show();
+			return;
+		}
+		Map<String, Object> map=new HashMap<String, Object>();
+		map.put("cardNo", model.getCardno());
+		map.put("pass", pass);
+		double need=Cal.sub(money, dzq);
+		if(need>model.getMoney()){
+			map.put("money", model.getMoney());
+		}else{
+			map.put("money", need);
+		}
+		map.put("oper", SystemParm.opper);
+		map.put("md", SystemParm.md);
+		map.put("lsh", lsh);
+		map.put("isFrist", isFrist);
+		try {
+			HtClient.post(this,"sale/pay", map,"utf-8",new cn.hisaas.huiguanli.net.ListHttpResponseHandler(new TypeReference<SerachResultOfReturn<OutPay>>(){} ,"utf-8", hyPayDo));
+    	} catch (UnsupportedEncodingException e) {
+			Toast.makeText(this, e.getMessage(), Toast.LENGTH_SHORT).show();
+		}
+	}
+	
+	/**
+	 * 券支付
+	 */
+	private void voucherPay(String pass,boolean isFrist){
+		if(pass==null||pass.length()==0){
+			Toast.makeText(this, "密码为空", Toast.LENGTH_SHORT).show();
+			return;
+		}
+		Map<String, Object> map=new HashMap<String, Object>();
+		map.put("cardNo", model.getCardno());
+		map.put("pass", pass);
+		double need=Cal.sub(money, hy);
+		if(need>model.getDzq()){
+			map.put("money", model.getDzq());
+		}else{
+			map.put("money", need);
+		}
+		map.put("oper", SystemParm.opper);
+		map.put("md", SystemParm.md);
+		map.put("lsh", lsh);
+		map.put("isFrist", isFrist);
+		try {
+			HtClient.post(this,"sale/voucherPay", map,"utf-8",new cn.hisaas.huiguanli.net.ListHttpResponseHandler(new TypeReference<SerachResultOfReturn<OutPay>>(){} ,"utf-8", voucherPayDo));
+    	} catch (UnsupportedEncodingException e) {
+			Toast.makeText(this, e.getMessage(), Toast.LENGTH_SHORT).show();
+		}
+	}
+	
+//	/**
+//	 * 券交易监听
+//	 * @author Fan
+//	 *
+//	 */
+//	private SerachListenerDo<OutPay> voucherPayDo =new SerachListenerDo<OutPay>() {
+//		@Override
+//		public void onRequstStart() {
+//			Util.showProgressDialog(JZActivity.this, null, "正在支付...");
+//		}
+//		@Override
+//		public void onRequstFish(SerachResultOfReturn<OutPay> result) {
+//			Util.dismissDialog();
+//			if(result!=null){
+//				if(result.getSuccess()){
+//					OutPay op=result.getData();
+//					if(op!=null && op.getCardNo()!=null&&op.getCardNo().equals(model.getCardno())){
+//						dzq=op.getZfje();
+//						model.setDzq(op.getDqye());
+//						dzqb.setEnabled(false);//已经用电子券支付过设置为不可用状态
+//						if(Cal.add(dzq,Cal.add(hy, xj))<money){//金额不足再进行设置
+//							if(hyb.isEnabled()){
+//								hyb.setChecked(true);
+//							}else{
+//								xjb.setChecked(true);
+//							}
+//						}
+//						close();
+//					}else{
+//						passWord=null;
+//						Toast.makeText(JZActivity.this, "交易失败"+result.getMessage(), Toast.LENGTH_SHORT).show();	
+//					}
+//				}else{
+//					passWord=null;
+//					Toast.makeText(JZActivity.this, "交易失败"+result.getMessage(), Toast.LENGTH_SHORT).show();
+//				}
+//			}else{
+//				passWord=null;
+//				Toast.makeText(JZActivity.this, "交易结果未知", Toast.LENGTH_SHORT).show();
+//			}
+//		}
+//		@Override
+//		public void onRequstFail(String message) {
+//			passWord=null;
+//			Util.dismissDialog();
+//			Toast.makeText(JZActivity.this, message, Toast.LENGTH_SHORT).show();
+//		}
+//	}; 
+	
+	/**
+	 * 券交易监听
+	 * @author Fan
+	 *
+	 */
+	private SerachListenerDo<OutPay> voucherPayDo =new SerachListenerDo<OutPay>() {
+		@Override
+		public void onRequstStart() {
+			if(!Util.canUse()){
+				Util.showProgressDialog(JZActivity.this, null, "正在支付...");
+			}
+		}
+		@Override
+		public void onRequstFish(SerachResultOfReturn<OutPay> result) {
+			if(result!=null){
+				if(result.getSuccess()){
+					OutPay op=result.getData();
+					if(op!=null && op.getCardNo()!=null&&op.getCardNo().equals(model.getCardno())){
+						Util.dismissDialog();
+						dzq=op.getZfje();
+						model.setDzq(op.getDqye());
+						dzqb.setEnabled(false);//已经用电子券支付过设置为不可用状态
+						if(Cal.add(dzq,Cal.add(hy, xj))<money){//金额不足再进行设置
+							if(hyb.isEnabled()){
+								hyb.setChecked(true);
+							}else{
+								xjb.setChecked(true);
+							}
+						}
+						update(dzq,"dzq");
+						close();
+					}else{
+						Util.dismissDialog();
+						passWord=null;
+						Toast.makeText(JZActivity.this, "交易失败"+result.getMessage(), Toast.LENGTH_SHORT).show();	
+					}
+				}else{
+//					passWord=null;
+//					Toast.makeText(JZActivity.this, "交易失败"+result.getMessage(), Toast.LENGTH_SHORT).show();
+					
+					String errorMessage=result.getMessage();
+					switch(Util.analyze(errorMessage)){
+					case NEW_DO:
+						lsh=Util.getLSH();
+						voucherPay(passWord, true);
+						return;
+					case OLD_DO:
+						voucherPay(passWord, false);//由于结果未知重新发起交易
+						return;
+					default:
+						break;
+					}
+					Util.dismissDialog();
+					passWord=null;
+					Toast.makeText(JZActivity.this, "交易失败"+result.getMessage(), Toast.LENGTH_SHORT).show();
+					
+				}
+			}else{
+				voucherPay(passWord, false);//由于结果未知重新发起交易
+				return;
+			}
+		}
+		@Override
+		public void onRequstFail(int code,String message) {
+			Util.dismissDialog();
+			Util.dismissDialog();
+			switch (code) {
+			case 0:
+			case 9876:
+			case 504://结果未知
+				Util.showDialogWithButtons(JZActivity.this, "错误提示", "连接超时,如果想验证上次的操作是否成功请点击\"确定\",点击\"取消\"将会默认上次的操作没成功", new DialogInterface.OnClickListener() {
+					@Override
+					public void onClick(DialogInterface dialog, int which) {
+						voucherPay(passWord, false);//由于结果未知重新发起交易
+					}
+				},  new DialogInterface.OnClickListener() {
+					
+					@Override
+					public void onClick(DialogInterface dialog, int which) {
+						passWord=null;
+					}
+				});
+				break;
+			default:
+				passWord=null;
+				Toast.makeText(JZActivity.this, message, Toast.LENGTH_SHORT).show();
+				break;
+			}
+			
+			
+		}
+	}; 
+	
+	/**
+	 * 会员交易监听
+	 * @author Fan
+	 *
+	 */
+	private SerachListenerDo<OutPay> hyPayDo =new SerachListenerDo<OutPay>() {
+		@Override
+		public void onRequstStart() {
+			if(!Util.canUse()){
+				Util.showProgressDialog(JZActivity.this, null, "正在支付...");
+			}
+		}
+		@Override
+		public void onRequstFish(SerachResultOfReturn<OutPay> result) {
+			
+			if(result!=null){
+				if(result.getSuccess()){
+					OutPay op=result.getData();
+					if(op!=null && op.getCardNo()!=null&&op.getCardNo().equals(model.getCardno())){
+						Util.dismissDialog();
+						hy=op.getZfje();
+						model.setMoney(op.getDqye());
+						hyb.setEnabled(false);//已经用会员卡支付过设置为不可用状态
+						if(Cal.add(dzq,Cal.add(hy, xj))<money){//金额不足再进行设置
+							if(dzqb.isEnabled()){
+								dzqb.setChecked(true);
+							}else{
+								xjb.setChecked(true);
+							}
+						}
+						update(hy,"hy");
+						close();
+						
+					}else{
+						Util.dismissDialog();
+						passWord=null;
+						Toast.makeText(JZActivity.this, "交易失败"+result.getMessage(), Toast.LENGTH_SHORT).show();	
+					}
+				}else{
+					String errorMessage=result.getMessage();
+					switch(Util.analyze(errorMessage)){
+					case NEW_DO:
+						lsh=Util.getLSH();
+						pay(passWord, true);
+						return;
+					case OLD_DO:
+						pay(passWord, false);//由于结果未知重新发起交易
+						return;
+					default:
+						break;
+					}
+					Util.dismissDialog();
+					passWord=null;
+					Toast.makeText(JZActivity.this, "交易失败"+result.getMessage(), Toast.LENGTH_SHORT).show();
+				}
+			}else{
+				pay(passWord, false);//由于结果未知重新发起交易
+			}
+		}
+		@Override
+		public void onRequstFail(int code,String message) {
+			Util.dismissDialog();
+			switch (code) {
+			case 0:
+			case 9876:
+			case 504://结果未知
+				Util.showDialogWithButtons(JZActivity.this, "错误提示", "连接超时,如果想验证上次的交易是否成功请点击\"确定\",点击\"取消\"将会默认上次的交易没成功", new DialogInterface.OnClickListener() {
+					@Override
+					public void onClick(DialogInterface dialog, int which) {
+						pay(passWord, false);
+					}
+				},  new DialogInterface.OnClickListener() {
+					
+					@Override
+					public void onClick(DialogInterface dialog, int which) {
+						passWord=null;
+					}
+				});
+				break;
+			default:
+				passWord=null;
+				Toast.makeText(JZActivity.this, message, Toast.LENGTH_SHORT).show();
+				break;
+			}
+		}
+	}; 
+	 /**屏蔽返回键**/
+    @Override
+    public boolean onKeyDown(int keyCode,KeyEvent event){
+        if(keyCode==KeyEvent.KEYCODE_BACK)
+            return true;
+        return super.onKeyDown(keyCode, event);
+    }
+    
+    
+    
+	protected void update(double jine, String method) {
+		// TODO Auto-generated method stub
+		Map<String,String> map=MainApplication.mainActivity.getUpText();
+		String coupon=map.get("coupon");
+		String remaining_money=map.get("remaining_money");
+		String shop_remaining=map.get("shop_remaining");
+		String updateSQL="";
+		String upConusme;
+		
+		if("hy".equals(method)){
+			upConusme=Cal.add(hy+"", remaining_money)+"";
+			MainApplication.mainActivity.updateText(coupon, upConusme,shop_remaining);
+			updateSQL="update in_out set remaining_money='"+upConusme+"' where code='"+SystemParm.md+"'";
+		}else if("dzq".equals(method)){
+			upConusme=Cal.add(dzq+"", coupon)+"";
+			MainApplication.mainActivity.updateText(upConusme, remaining_money,shop_remaining);
+			updateSQL="update in_out set coupon='"+upConusme+"' where code='"+SystemParm.md+"'";
+		}
+		updateSQL(updateSQL);
+		updateSQL=null;
+		upConusme=null;
+		map=null;
+		
+	}
+	
+	/**
+	 * 更新本地库中的数据 
+	 * @param updateSQL
+	 */
+	private void updateSQL(final String updateSQL) {
+		// TODO Auto-generated method stub
+		BaseDb.getAsyncDB().addWork(new Update() {
+			
+			@Override
+			public String update(SQLiteDatabase db) throws Exception {
+				// TODO Auto-generated method stub
+				try {
+					db.beginTransaction();
+					db.execSQL(updateSQL);
+					db.setTransactionSuccessful();
+				} catch (Exception e) {
+					// TODO: handle exception
+				}finally{
+					db.endTransaction();
+				}
+				return null;
+			}
+		}, null);
+		
+	}
+}

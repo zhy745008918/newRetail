@@ -1,0 +1,55 @@
+package cn.hisaas.huiguanli.frame;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import cn.hisaas.huiguanli.activity.R;
+import cn.hisaas.huiguanli.adaper.HYFrameAdapter;
+import android.app.Activity;
+import android.os.Bundle;
+import android.util.SparseArray;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.GridView;
+import android.widget.LinearLayout;
+
+public class HYFragment extends BaseFragment {
+
+	private GridView grid;
+	private LinearLayout linear;
+	private HYFrameAdapter adapter;
+	private Activity activity;
+
+	@Override
+	public View onCreateView(LayoutInflater inflater, ViewGroup container,
+			Bundle savedInstanceState) {
+		// TODO Auto-generated method stub
+		View view = inflater
+				.inflate(R.layout.hy_frame_layout, container, false);
+		grid = (GridView) view.findViewById(R.id.hy_frame_grid);
+		linear = (LinearLayout) view.findViewById(R.id.hy_frame_linear);
+		initData();
+		return view;
+	}
+
+	private void initData() {
+		// TODO Auto-generated method stub
+		activity = getActivity();
+		List<SparseArray<Object>> datas = new ArrayList<SparseArray<Object>>();
+		int[] images = { R.drawable.ic_launcher, R.drawable.ic_launcher,
+				R.drawable.ic_launcher, R.drawable.ic_launcher,
+				R.drawable.ic_launcher, R.drawable.ic_launcher,
+				R.drawable.ic_launcher };
+		String[] texts = { "注册会员", "会员充值", "卡冻结", "卡挂失", "卡注销", "会员签到", "积分兑换" };
+		for (int i = 0; i < texts.length; i++) {
+			SparseArray<Object> sa=new SparseArray<Object>();
+			sa.append(0, images[i]);
+			sa.append(1, texts[i]);
+			datas.add(sa);
+		}
+		adapter = new HYFrameAdapter(activity, datas, R.layout.hy_frame_item);
+		grid.setAdapter(adapter);
+	}
+
+}

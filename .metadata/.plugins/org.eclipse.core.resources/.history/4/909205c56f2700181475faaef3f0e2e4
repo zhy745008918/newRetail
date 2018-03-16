@@ -1,0 +1,45 @@
+package cn.hisaas.huiguanli.activity.dialog;
+
+import android.content.Intent;
+import android.os.Bundle;
+import android.view.MotionEvent;
+import android.widget.EditText;
+import android.widget.GridView;
+import cn.hisaas.huiguanli.activity.R;
+import cn.hisaas.huiguanli.activity.eum.ResultEnum;
+import cn.hisaas.huiguanli.tools.Hide;
+import cn.hisaas.huiguanli.ui.Keyboard.KeyCall;
+
+public class TmInputActivity extends DialogActivity implements KeyCall{
+
+	private EditText code;
+	@Override
+	protected void onCreate(Bundle savedInstanceState) {
+		super.onCreate(savedInstanceState);
+		setContentView(R.layout.tm_input);
+		code=(EditText)findViewById(R.id.tm_input_cardno);
+		Hide.hideSoftInputMethod(code);
+		GridView grid=(GridView)findViewById(R.id.tm_input_keyboard);
+		new cn.hisaas.huiguanli.ui.Keyboard(grid, this, this);
+	}
+	@Override
+	public boolean onTouchEvent(MotionEvent event){
+		Intent intent=new Intent();
+		setResult(ResultEnum.FAILURE, intent);
+		finish();
+		return true;
+	}
+	@Override
+	public void call() {
+		Intent intent=new Intent();
+		intent.putExtra("code", code.getText().toString());
+		setResult(ResultEnum.SUCCESS, intent);
+		finish();
+	}
+	@Override
+	public void hj() {
+		// TODO Auto-generated method stub
+		
+	}
+	
+}

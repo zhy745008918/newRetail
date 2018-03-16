@@ -1,0 +1,11 @@
+package cn.hisaas.huiguanli.activity.dialog;
+
+
+/**
+ * 
+ * @author Administrator
+ *
+ */
+public class SettingActivity extends DialogActivity {
+	
+}

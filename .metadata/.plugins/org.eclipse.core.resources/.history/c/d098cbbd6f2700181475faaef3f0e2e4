@@ -1,0 +1,72 @@
+package cn.hisaas.huiguanli.activity.dialog;
+
+import android.content.Intent;
+import android.os.Bundle;
+import android.view.KeyEvent;
+import android.view.MotionEvent;
+import android.view.View;
+import android.view.View.OnKeyListener;
+import android.widget.EditText;
+import android.widget.GridView;
+import cn.hisaas.huiguanli.activity.R;
+import cn.hisaas.huiguanli.activity.eum.ResultEnum;
+import cn.hisaas.huiguanli.tools.Hide;
+import cn.hisaas.huiguanli.ui.Keyboard.KeyCall;
+
+public class HYSKActivity extends DialogActivity implements KeyCall{
+
+	private EditText cardNo;
+	private EditText tel;
+	@Override
+	protected void onCreate(Bundle savedInstanceState) {
+		super.onCreate(savedInstanceState);
+		setContentView(R.layout.hy_sk);
+		cardNo=(EditText)findViewById(R.id.hy_sk_cardno);
+		cardNo.setOnKeyListener(new OnKeyListener() {
+			@Override
+			public boolean onKey(View v, int keyCode, KeyEvent event) {
+				if(keyCode==KeyEvent.KEYCODE_ENTER){
+					if(event.getAction()==KeyEvent.ACTION_DOWN){
+						String code=cardNo.getText().toString();
+						if(code!=null&&code.trim().length()!=0){
+							Intent intent=new Intent();
+							intent.putExtra("code", code);
+							intent.putExtra("tel", "");
+							setResult(ResultEnum.SUCCESS, intent);
+							finish();
+						}
+					}
+					return true;
+				}
+				return false;
+			}
+		});
+		
+		tel=(EditText)findViewById(R.id.hy_sk_tel);
+		Hide.hideSoftInputMethod(cardNo);
+		Hide.hideSoftInputMethod(tel);
+		GridView grid=(GridView)findViewById(R.id.hy_sk_keyboard);
+		new cn.hisaas.huiguanli.ui.Keyboard(grid, this, this);
+	}
+	@Override
+	public boolean onTouchEvent(MotionEvent event){
+		finish();
+		return true;
+	}
+	@Override
+	public void call() {
+		String cardNo=this.cardNo.getText().toString();
+		String tel=this.tel.getText().toString();
+		Intent intent=new Intent();
+		intent.putExtra("code", cardNo);
+		intent.putExtra("tel", tel);
+		setResult(ResultEnum.SUCCESS, intent);
+		finish();
+	}
+	@Override
+	public void hj() {
+		// TODO Auto-generated method stub
+		
+	}
+	
+}

@@ -1,0 +1,19 @@
+package cn.hisaas.huiguanli.net;
+
+
+/**
+ * 
+ * @author Fan
+ *
+ */
+public final class NET {
+	
+	public static String SSS="http://192.168.1.180:8090/web/";
+//	public static String SSS="http://101.200.50.60/";
+//	public static String ip=null;
+//	public static Name local_name=null;
+	public static String getAdress(String methName){
+		//return SSS+methName;//"http://192.168.1.180:8090/shop2/appSerach/"+methName;
+		return String.format("%s%s", SSS,methName);
+	}
+}

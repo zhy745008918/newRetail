@@ -1,0 +1,22 @@
+package cn.hisaas.huiguanli.activity.dialog;
+
+import cn.hisaas.huiguanli.activity.R;
+import android.os.Bundle;
+
+
+/**
+ * 
+ * @author Administrator
+ *
+ */
+public class SettingActivity extends DialogActivity {
+	
+	
+	@Override
+	protected void onCreate(Bundle savedInstanceState) {
+		// TODO Auto-generated method stub
+		super.onCreate(savedInstanceState);
+		setContentView(R.layout.activity_setting);
+	}
+	
+}

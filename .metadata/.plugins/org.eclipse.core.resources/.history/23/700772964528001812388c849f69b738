@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <string name="app_name">慧管理</string>
+    <string name="code_string">商品编码</string>
+	<string name="name_string">商品名称</string>
+	<string name="sl_string">数量</string>
+	<string name="dj_string">单价</string>
+	<string name="ys_string">应收</string>
+	<string name="yh_string">返券</string>
+	
+	<string name="hj_string">合计:</string>
+	
+	
+	<string name="jz_string">结&#160;&#160;账</string>
+	<string name="hy_string">会&#160;&#160;员</string>
+	<string name="gd_string">挂&#160;&#160;单</string>
+	<string name="tm_string">条&#160;&#160;码</string>	
+	<string name="ql_string">清&#160;&#160;零</string>
+	
+	<string name="money">0.00元</string>
+	<string name="spjs_sring">商品件数:</string>
+	<string name="count">0.00件</string>
+	
+	<string name="lsh">流水号:</string>
+	
+	<string name="main_title">智慧超市系统</string>
+	<string name="message">消息</string>
+	<string name="pull_to_refresh_pull_label">下拉刷新</string>
+    <string name="pull_to_refresh_release_label">松开后刷新</string>
+    <string name="pull_to_refresh_refreshing_label">正在刷新</string>
+    
+    <string name="card_no">卡号</string>
+    <string name="xgje_money">金额</string>
+    
+    <string name="code">请输入条码</string>
+    
+    <string name="name">姓名</string>
+    <string name="tel">电话</string>
+    <string name="pass">密码</string>
+    
+    
+    <string name="reg">注&#160;&#160;&#160;&#160;册</string>
+    
+    <string name="jine">金额</string>
+	<string name="kscz">快速充值</string>
+	
+	<string name="cz">充&#160;&#160;&#160;&#160;值</string>
+	
+	<string name="start">开始</string>
+	
+	<string name="end">结束</string>
+	
+	<string name="serach">查询</string>
+	
+	<string name="sp_serach">商品查询</string>
+	<string name="lr_submit">库存录入</string>
+	
+	<string name="gs">挂&#160;&#160;&#160;&#160;失</string>
+	<string name="ksgs">快速挂失</string>
+	
+	<string name="zx">注&#160;&#160;&#160;&#160;销</string>
+	<string name="kszx">快速注销</string>
+	
+	<string name="dj">冻&#160;&#160;&#160;&#160;结</string>
+	
+	<string name="qd">签&#160;&#160;&#160;&#160;到</string>
+	
+	<string name="ksdj">快速冻结</string>
+	
+	<string name="ksqd">快速签到</string>
+	
+	<string name="cancel">取消</string>
+	
+	<string name="confirm">确定</string>
+	
+	<string name="left">&lt;</string>
+	<string name="right">&gt;</string>
+	
+	
+	<string name="hyjf_exchange">会员积分兑换</string>
+	<string name="input_hy_card">请输入卡号</string>
+	<string name="jf_credits">积分：</string>
+	<string name="hy_search">会员查询</string>
+	<string name="dh_sp_number">兑换商品码</string>
+	<string name="all_exchange">全部兑换</string>
+	
+</resources>

@@ -1,0 +1,287 @@
+package cn.hisaas.huiguanli.activity;
+
+import java.util.HashMap;
+import java.util.Map;
+import org.json.JSONObject;
+import com.alibaba.fastjson.TypeReference;
+import android.app.Activity;
+import android.content.Intent;
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
+import android.os.Bundle;
+import android.text.Editable;
+import android.text.TextWatcher;
+import android.widget.CheckBox;
+import android.widget.EditText;
+import android.widget.GridView;
+import android.widget.Toast;
+import cn.hisaas.huiguanli.dao.PSerach;
+import cn.hisaas.huiguanli.db.BaseDb;
+import cn.hisaas.huiguanli.db.async.Update;
+import cn.hisaas.huiguanli.model.LogInModel;
+import cn.hisaas.huiguanli.model.SerachResultOfReturn;
+import cn.hisaas.huiguanli.net.HtClient;
+import cn.hisaas.huiguanli.net.ListHttpResponseHandler;
+import cn.hisaas.huiguanli.net.listener.SerachListenerDo;
+import cn.hisaas.huiguanli.parm.SystemParm;
+import cn.hisaas.huiguanli.tools.Decryption;
+import cn.hisaas.huiguanli.tools.Encrypt;
+import cn.hisaas.huiguanli.tools.Hide;
+import cn.hisaas.huiguanli.tools.Util;
+import cn.hisaas.huiguanli.ui.Keyboard.KeyCall;
+
+/**
+ * 登录界面
+ * @author Administrator
+ *
+ */
+public class LogInActivity extends Activity implements KeyCall{
+	
+	private EditText userName;
+	private EditText passWord;
+	private EditText md;
+	private CheckBox remmberPass;
+	private boolean isChange=true;
+	/**
+	 * 是否是重新<br> false不是，true是
+	 * 
+	 */
+	private boolean yz=false;
+	@Override
+	protected void onCreate(Bundle savedInstanceState) {
+		super.onCreate(savedInstanceState);
+		setContentView(R.layout.login);
+		Intent intent=getIntent();
+		if(intent!=null){
+			yz=intent.getBooleanExtra("YZ", false);
+		}
+		userName=(EditText)findViewById(R.id.login_username);
+		passWord=(EditText)findViewById(R.id.login_pass);
+		remmberPass=(CheckBox)findViewById(R.id.login_remmber_pass);
+		md=(EditText)findViewById(R.id.login_md);
+		md.addTextChangedListener(new TextWatcher() {
+			@Override
+			public void onTextChanged(CharSequence s, int start, int before, int count) {
+			}
+			@Override
+			public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+			}
+			@Override
+			public void afterTextChanged(Editable s) {
+				if(!isChange){
+					isChange=true;
+				}
+			}
+		});
+		Hide.hideSoftInputMethod(md);
+		Hide.hideSoftInputMethod(passWord);
+		Hide.hideSoftInputMethod(userName);
+		GridView grid=(GridView)findViewById(R.id.login_grid);
+		new cn.hisaas.huiguanli.ui.Keyboard(grid, this, this);
+		if(yz){
+			md.setText(SystemParm.md);
+			userName.setText(SystemParm.opper);
+			md.setEnabled(false);
+			userName.setEnabled(false);
+			md.setFocusable(false);
+			userName.setFocusable(false);
+			passWord.requestFocus();
+		}else{
+			getMd();
+		}
+	}
+
+	@Override
+	public void call() {
+		Map<String, String> map=new HashMap<String, String>();
+		map.put("md", md.getText().toString());
+		userName.setText("00000001");
+		passWord.setText("8888");
+		map.put("userName", userName.getText().toString());
+		map.put("passWord", passWord.getText().toString());
+		if(chekIsNull(map.get("md"))){
+			Toast.makeText(LogInActivity.this, "请输入门店号", Toast.LENGTH_SHORT).show();
+			md.requestFocus();
+			map.clear();
+			map=null;
+			return;
+		}
+		if(chekIsNull(map.get("userName"))){
+			Toast.makeText(LogInActivity.this, "请输入账号", Toast.LENGTH_SHORT).show();
+			userName.requestFocus();
+			map.clear();
+			map=null;
+			return;
+		}
+		if(chekIsNull(map.get("passWord"))){
+			Toast.makeText(LogInActivity.this, "请输入密码", Toast.LENGTH_SHORT).show();
+			passWord.requestFocus();
+			map.clear();
+			map=null;
+			return;
+		}
+		SystemParm.PASS=map.get("passWord");
+		try {
+			map.put("passWord", Encrypt.encrypt(map.get("passWord")));
+		} catch (Exception e1) {
+			Toast.makeText(LogInActivity.this, "系统出错", Toast.LENGTH_SHORT).show();
+			return;
+		}
+		try {
+			HtClient.post(LogInActivity.this,"storeUser/logIn", map,"utf-8",new ListHttpResponseHandler(new TypeReference<SerachResultOfReturn<LogInModel>>(){} ,"utf-8", commSerachDo));
+    	} catch (Exception e) {
+			Toast.makeText(LogInActivity.this, e.getMessage(), Toast.LENGTH_SHORT).show();
+		}
+	}
+	/**
+     * 检测字符串是否为空
+     * @param s
+     * @return
+     */
+    private  boolean chekIsNull(String s){
+    	if(s!=null && !"".equals(s.trim())){
+    		return false;
+    	}else{
+    		return true;
+    	}
+    }
+	private SerachListenerDo<LogInModel> commSerachDo =new SerachListenerDo<LogInModel>() {
+		
+		@Override
+		public void onRequstStart() {
+			Util.showProgressDialog(LogInActivity.this, null, "正在登录...");
+		}
+		@Override
+		public void onRequstFish(SerachResultOfReturn<LogInModel> result) {
+			if(result!=null){
+				if(result.getSuccess()){
+					LogInModel model=result.getData();
+					String value=model.getValue();
+					try {
+						value=new Decryption().decryption(value);
+						JSONObject json=new JSONObject(value);
+						SystemParm.KEY=json.getString("key");
+						SystemParm.SESSION_ID=json.getString("sessionId");
+						SystemParm.md=json.getString("md");
+						SystemParm.opper=json.getString("userCode");
+						SystemParm.opperName=model.getUserName();
+						SystemParm.mdName=model.getMdName();
+						if(model.getMenu()!=null){
+							SystemParm.MENU.clear();
+							char[] c=model.getMenu().toCharArray();
+							for(char cr:c){
+								SystemParm.MENU.put(cr, true);
+							}
+						}
+						SystemParm.IS_DZ=model.getIsDz();
+						if(isChange){
+							writeMd();//保存门店登录信息
+						}
+						Util.dismissDialog();
+						if(!yz){
+							Intent myIntent = new Intent(LogInActivity.this, MainActivity.class);
+							long timestamp=System.currentTimeMillis();
+							myIntent.putExtra("time_stamp", timestamp);
+							LogInActivity.this.startActivity(myIntent);
+							myIntent=null;
+							timestamp=0;
+						}
+				        LogInActivity.this.finish();
+					} catch (Exception e) {
+						Util.dismissDialog();
+						Toast.makeText(LogInActivity.this, e.getMessage(), Toast.LENGTH_SHORT).show();
+					}
+				}else{
+					Util.dismissDialog();
+					Toast.makeText(LogInActivity.this, result.getMessage(), Toast.LENGTH_SHORT).show();
+				}
+			}else{
+				Util.dismissDialog();
+				Toast.makeText(LogInActivity.this, "返回为空", Toast.LENGTH_SHORT).show();
+			}
+		}
+		@Override
+		public void onRequstFail(int code,String message) {
+			Util.dismissDialog();
+			Toast.makeText(LogInActivity.this, message, Toast.LENGTH_SHORT).show();
+		}
+	};
+	//查询上次的登录门店
+	private void getMd(){
+		BaseDb.getAsyncDB().addWork(new PSerach("select code from md where isuse='Y'"),  new cn.hisaas.huiguanli.db.async.DbHandelSerach<String>() {
+			@Override
+			public String fromDbToModle(Cursor cursor) {
+				if(cursor.moveToNext()){
+					return cursor.getString(0);
+				}
+				return null;
+			}
+			@Override
+			public void onRequstStart() {
+			}
+			@Override
+			public void onRequstFish(String result) {
+				if(result!=null){
+					isChange=false;
+					md.setText(result);
+					userName.requestFocus();
+				}
+			}
+			@Override
+			public void onRequstFail(String message) {
+			}
+		});
+	}
+	//保存门店信息
+	private void writeMd(){
+		BaseDb.getAsyncDB().addWork(new Update() {
+			@Override
+			public String update(SQLiteDatabase db) throws Exception {
+				StringBuilder sb = new StringBuilder();
+				db.beginTransaction();
+				try{
+					sb.setLength(0);
+					sb.append("delete from md where code='");
+					sb.append(SystemParm.md);
+					sb.append("'");
+					db.execSQL(sb.toString());
+					sb.setLength(0);
+					sb.append("update md set isuse='N'");
+					db.execSQL(sb.toString());
+					sb.setLength(0);
+					sb.append("insert into md values(");
+					sb.append("'");
+					sb.append(SystemParm.md);
+					sb.append("',");
+					sb.append("'");
+					sb.append(SystemParm.mdName);
+					sb.append("',");
+					sb.append("'");
+					sb.append('Y');
+					sb.append("',");
+					sb.append("''");
+					sb.append(")");
+					db.execSQL(sb.toString());
+					sb.setLength(0);
+					db.setTransactionSuccessful();
+				}finally {
+					db.endTransaction();
+				}
+				return null;
+			}
+		}, null);
+	}
+
+	@Override
+	protected void onDestroy() {
+		super.onDestroy();
+//		Log.e("test", "LogInActivity关闭了");
+	}
+
+	@Override
+	public void hj() {
+		// TODO Auto-generated method stub
+		
+	}
+	
+}

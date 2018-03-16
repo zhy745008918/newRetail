@@ -1,0 +1,5 @@
+package cn.hisaas.huiguanli.activity.dialog;
+
+public class SettingActivity extends DialogActivity {
+
+}

@@ -1,0 +1,80 @@
+package cn.hisaas.huiguanli.frame;
+
+
+import java.util.ArrayList;
+import java.util.List;
+
+
+import android.os.Bundle;
+import android.support.v4.app.Fragment;
+import android.support.v4.view.ViewPager;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.View.OnClickListener;
+import android.view.ViewGroup;
+import cn.hisaas.huiguanli.activity.R;
+import cn.hisaas.huiguanli.adaper.BasePageAdapter;
+import cn.hisaas.huiguanli.frame.hy.CreditsExchangeFragment;
+import cn.hisaas.huiguanli.frame.hy.RegisteredFragment;
+import cn.hisaas.huiguanli.frame.hy.ReportLossFragment;
+import cn.hisaas.huiguanli.frame.hy.CheckInFragment;
+import cn.hisaas.huiguanli.frame.hy.FreezeFragment;
+import cn.hisaas.huiguanli.frame.hy.LogOutFragment;
+import cn.hisaas.huiguanli.frame.hy.RechargeFragment;
+import cn.hisaas.huiguanli.ui.ViewPagerHorizontalScrollView;
+import cn.hisaas.huiguanli.ui.ViewPagerHorizontalScrollView.OnMyViewSelect;
+
+public class HYGLFragment extends BaseFragment implements OnClickListener,OnMyViewSelect{
+	
+	private ViewPager mPager;
+	private ViewPagerHorizontalScrollView scrollView;
+	private BasePageAdapter<Fragment> adapter;
+	
+	
+	@Override
+	public View onCreateView(LayoutInflater inflater, ViewGroup container,
+			Bundle savedInstanceState) {
+		View view=inflater.inflate(R.layout.hy_layout, container,false);
+		mPager=(ViewPager)view.findViewById(R.id.hy_from_viewpage);
+		scrollView=(ViewPagerHorizontalScrollView)view.findViewById(R.id.hy_from_scrollview);
+		adapter=new BasePageAdapter<Fragment>(getActivity().getSupportFragmentManager());
+		mPager.setAdapter(adapter);
+		scrollView.setViewPager(mPager);
+		scrollView.setOnMyViewSelect(this);
+		addPages();
+		return view;
+	}
+	
+	private final void addPages(){
+//		adapter.addModel(new RegisteredFragment());
+//		adapter.addModel(new RechargeFragment());
+//		adapter.addModel(new FreezeFragment());
+//		adapter.addModel(new ReportLossFragment());
+//		adapter.addModel(new LogOutFragment());
+//		adapter.addModel(new CheckInFragment());
+//		adapter.addModel(new CreditsExchangeFragment());
+		adapter.notifyDataSetChanged();
+		List<String> list=new ArrayList<String>();
+		list.add(RegisteredFragment.tag);
+		list.add(RechargeFragment.tag);
+		list.add(FreezeFragment.tag);
+		list.add(ReportLossFragment.tag);
+		list.add(LogOutFragment.tag);
+		list.add(CheckInFragment.tag);
+		list.add(CreditsExchangeFragment.tag);
+		scrollView.setListViewText(list);
+		list.clear();
+		list=null;
+	}
+
+	@Override
+	public void onMyViewSelect(int tag) {
+		
+	}
+
+	@Override
+	public void onClick(View v) {
+		
+	}
+	
+}

@@ -1,0 +1,5 @@
+package cn.hisaas.huiguanli.adaper.holder;
+
+public class ViewHolder {
+
+}

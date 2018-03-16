@@ -1,0 +1,83 @@
+package cn.hisaas.huiguanli.activity.dialog;
+
+import android.content.Intent;
+import android.os.Bundle;
+import android.view.KeyEvent;
+import android.view.MotionEvent;
+import android.view.View;
+import android.view.View.OnClickListener;
+import android.view.View.OnKeyListener;
+import android.widget.EditText;
+import android.widget.GridView;
+import cn.hisaas.huiguanli.activity.R;
+import cn.hisaas.huiguanli.activity.eum.ResultEnum;
+import cn.hisaas.huiguanli.tools.Hide;
+import cn.hisaas.huiguanli.ui.Keyboard.KeyCall;
+
+/**
+ * √‹¬Î ‰»ÎøÚ
+ * @author Administrator
+ *
+ */
+public class PassWordActivity extends DialogActivity implements KeyCall{
+
+	private EditText pass;
+	private GridView grid;
+	@Override
+	protected void onCreate(Bundle savedInstanceState) {
+		super.onCreate(savedInstanceState);
+		setContentView(R.layout.pass_input);
+		pass=(EditText)findViewById(R.id.pass_input_cardno);
+		Hide.hideSoftInputMethod(pass);
+		grid=(GridView)findViewById(R.id.pass_input_keyboard);
+		grid.setVisibility(View.GONE);
+		pass.setOnClickListener(new OnClickListener() {
+			@Override
+			public void onClick(View v) {
+				if(grid.getVisibility()==View.GONE){
+					grid.setVisibility(View.VISIBLE);
+					new cn.hisaas.huiguanli.ui.Keyboard(grid, PassWordActivity.this, PassWordActivity.this);
+				}
+			}
+		});
+//		new cn.hisaas.huiguanli.ui.Keyboard(grid, PassWordActivity.this, PassWordActivity.this);
+		pass.setOnKeyListener(new OnKeyListener() {
+			@Override
+			public boolean onKey(View v, int keyCode, KeyEvent event) {
+				if(keyCode==KeyEvent.KEYCODE_ENTER){
+					if(event.getAction()==KeyEvent.ACTION_DOWN){
+						String code=pass.getText().toString();
+						if(code!=null&&code.trim().length()!=0){
+							Intent intent=new Intent();
+							intent.putExtra("pass", pass.getText().toString());
+							setResult(ResultEnum.SUCCESS, intent);
+							finish();
+						}
+						return true;
+					}
+				}
+				return false;
+			}
+		});
+	}
+	@Override
+	public boolean onTouchEvent(MotionEvent event){
+		Intent intent=new Intent();
+		setResult(ResultEnum.FAILURE, intent);
+		finish();
+		return true;
+	}
+	@Override
+	public void call() {
+		Intent intent=new Intent();
+		intent.putExtra("pass", pass.getText().toString());
+		setResult(ResultEnum.SUCCESS, intent);
+		finish();
+	}
+	@Override
+	public void hj() {
+		// TODO Auto-generated method stub
+		
+	}
+	
+}

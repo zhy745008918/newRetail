@@ -1,0 +1,442 @@
+package cn.hisaas.huiguanli.frame.hy;
+
+import java.io.UnsupportedEncodingException;
+import java.util.HashMap;
+import java.util.Map;
+import com.alibaba.fastjson.TypeReference;
+import cn.hisaas.huiguanli.activity.R;
+import cn.hisaas.huiguanli.activity.dialog.TmInputActivity;
+import cn.hisaas.huiguanli.activity.eum.ResultEnum;
+import cn.hisaas.huiguanli.adaper.SYListAdaper;
+import cn.hisaas.huiguanli.frame.BaseFragment;
+import cn.hisaas.huiguanli.model.PublicMember;
+import cn.hisaas.huiguanli.model.PublicMember1;
+import cn.hisaas.huiguanli.model.SerachResultOfReturn;
+import cn.hisaas.huiguanli.model.SpModel;
+import cn.hisaas.huiguanli.model.UpResultOfReturn;
+import cn.hisaas.huiguanli.net.HtClient;
+import cn.hisaas.huiguanli.net.listener.SerachListenerDo;
+import cn.hisaas.huiguanli.net.listener.UpListenerDo;
+import cn.hisaas.huiguanli.parm.SystemParm;
+import cn.hisaas.huiguanli.tools.Cal;
+import cn.hisaas.huiguanli.tools.Hide;
+import cn.hisaas.huiguanli.tools.Util;
+import android.app.Activity;
+import android.app.AlertDialog;
+import android.app.Fragment;
+import android.content.DialogInterface;
+import android.content.Intent;
+import android.os.Bundle;
+import android.text.InputType;
+import android.util.Log;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.View.OnClickListener;
+import android.view.View.OnFocusChangeListener;
+import android.view.ViewGroup;
+import android.widget.AdapterView;
+import android.widget.AdapterView.OnItemClickListener;
+import android.widget.AdapterView.OnItemLongClickListener;
+import android.widget.Button;
+import android.widget.EditText;
+import android.widget.ImageView;
+import android.widget.ListView;
+import android.widget.TextView;
+import android.widget.Toast;
+
+
+public class CreditsExchangeFragment extends Fragment implements OnClickListener{
+
+	/**
+	 * 积分兑换接口 member/jfRedeem
+	 * 积分兑换   参数    
+	 * private String cardNo;
+	 * private String md;
+	 * private Double jf;
+	 * private String spName;
+	 * private String oper;
+	 * private String lsh;
+	 */
+	
+	public static String tag="积分兑换";
+	
+	private ListView spListView;
+	private Button hySearchBtn,spSearchBtn,allExchange;
+	private TextView jfText;
+	private EditText cardNoEdit;
+	private ImageView cardNoClear;
+	
+	private Activity activity;
+	
+	private SYListAdaper adapter;
+	
+	@Override
+	public View onCreateView(LayoutInflater inflater, ViewGroup container,
+			Bundle savedInstanceState) {
+		// TODO Auto-generated method stub
+		activity=getActivity();
+		View view=inflater.inflate(R.layout.credits_exchange_hy, container,false);
+		
+		initView(view);
+		
+		initData();
+		
+		return view;
+	}
+
+	/**
+	 * 初始化组件
+	 * @param view
+	 */
+	private void initView(View view) {
+		// TODO Auto-generated method stub
+		spListView=(ListView)view.findViewById(R.id.sp_display_in_credits_fragment);
+		hySearchBtn=(Button)view.findViewById(R.id.hy_search_in_credits_fragment);
+		spSearchBtn=(Button)view.findViewById(R.id.sp_search_in_credits_fragment);
+		allExchange=(Button)view.findViewById(R.id.all_exchange_in_credits_fragment);
+		jfText=(TextView)view.findViewById(R.id.jf_in_credits_fragment);
+		cardNoEdit=(EditText)view.findViewById(R.id.card_no_in_credits_fragment);
+		cardNoClear=(ImageView)view.findViewById(R.id.card_no_clear_in_credits_fragment);
+		hySearchBtn.setOnClickListener(this);
+		spSearchBtn.setOnClickListener(this);
+		allExchange.setOnClickListener(this);
+		cardNoClear.setOnClickListener(this);
+		allExchange.setEnabled(false);
+		cardNoEdit.setInputType(InputType.TYPE_NULL); 
+		cardNoEdit.setOnFocusChangeListener(new OnFocusChangeListener() {
+			@Override
+			public void onFocusChange(View v, boolean hasFocus) {
+				if(hasFocus){
+					Hide.hideInputWindow(activity);
+				}
+			}
+		});
+		spListView.setOnItemClickListener(new OnItemClickListener() {
+
+			@Override
+			public void onItemClick(AdapterView<?> arg0, View arg1, int position,
+					long arg3) {
+				// TODO Auto-generated method stub
+				//更改数量
+				showInputDialog(R.id.sp_display_in_credits_fragment, "请输入数量",position);
+			}
+		});
+		spListView.setOnItemLongClickListener(new OnItemLongClickListener() {
+
+			@Override
+			public boolean onItemLongClick(AdapterView<?> arg0, View arg1,
+					int position, long arg3) {
+				// TODO Auto-generated method stub
+				adapter.deleteOne(position);
+				adapter.notifyDataSetChanged();
+				Util.showResultDialog(activity, "移除商品成功", "提示", true, 1);
+				if (adapter.getCount()==0) {
+					allExchange.setEnabled(false);
+				}
+				return true;
+			}
+		});
+		
+	}
+
+	/**
+	 * 初始化数据
+	 */
+	private void initData() {
+		// TODO Auto-generated method stub
+		adapter=new SYListAdaper(getActivity());
+		spListView.setAdapter(adapter);
+	}
+
+	@Override
+	public void onClick(View view) {
+		// TODO Auto-generated method stub
+		switch (view.getId()) {
+		case R.id.hy_search_in_credits_fragment:
+			if (cardNoEdit.getText()==null||"".equals(cardNoEdit.getText().toString())) {
+				Toast.makeText(activity, "请输入会员卡号", Toast.LENGTH_SHORT).show();
+				return;
+			}
+			serachHy(cardNoEdit.getText().toString());
+			break;
+		case R.id.sp_search_in_credits_fragment:
+			Intent intent=new Intent(activity,TmInputActivity.class);
+			startActivityForResult(intent, 0);
+			break;
+		case R.id.card_no_clear_in_credits_fragment:
+			cardNoEdit.setText(null);
+			jfText.setText(null);
+			break;
+		case R.id.all_exchange_in_credits_fragment:
+			if (jfText.getText()==null||"".equals(jfText.getText())) {
+				Toast.makeText(activity, "请查询会员卡", Toast.LENGTH_SHORT).show();
+				return;
+			}
+			//输入积分
+			showInputDialog(R.id.all_exchange_in_credits_fragment,"请输入积分",0);
+			break;
+
+		default:
+			break;
+		}
+		
+	}
+	
+	
+	/**
+	 * 查询会员信息
+	 * @param code
+	 * @param tel
+	 */
+	private void serachHy(String code){
+		Map<String, Object> map=new HashMap<String, Object>();
+		map.put("cardNo", code);
+		map.put("md", SystemParm.md);
+		try {
+			HtClient.post(activity,"member/serachMember", map,"utf-8",new cn.hisaas.huiguanli.net.ListHttpResponseHandler(new TypeReference<SerachResultOfReturn<PublicMember1>>(){} ,"utf-8", hySerachDo));
+    	} catch (UnsupportedEncodingException e) {
+			Toast.makeText(activity, e.getMessage(), Toast.LENGTH_SHORT).show();
+		}
+		map=null;
+	}
+	/**
+	 * 会员查询监听
+	 * @author Fan
+	 *
+	 */
+	private SerachListenerDo<PublicMember1> hySerachDo =new SerachListenerDo<PublicMember1>() {
+		@Override
+		public void onRequstStart() {
+			Util.showProgressDialog(activity, null, "正在查询...");
+		}
+		@Override
+		public void onRequstFish(SerachResultOfReturn<PublicMember1> result) {
+			Util.dismissDialog();
+			if(result!=null){
+				if(result.getSuccess()){
+					PublicMember pm=new PublicMember(result.getData());
+					jfText.setText(pm.getJf()+"");
+				}else{
+					Toast.makeText(activity, result.getMessage(), Toast.LENGTH_SHORT).show();
+					jfText.setText(null);
+				}
+			}else{
+				Toast.makeText(activity, "返回为空", Toast.LENGTH_SHORT).show();
+				jfText.setText(null);
+			}
+		}
+		@Override
+		public void onRequstFail(int code,String message) {
+			Util.dismissDialog();
+			Toast.makeText(activity, message, Toast.LENGTH_SHORT).show();
+			jfText.setText(null);
+		}
+	}; 
+	
+	
+	
+	@Override
+	public void onActivityResult(int requestCode, int resultCode, Intent data) {
+		// TODO Auto-generated method stub
+		Log.e("test","CreditsExchangeFragment" );
+		if (resultCode==ResultEnum.SUCCESS) {
+			serachCommod(data.getStringExtra("code"));
+		}
+		super.onActivityResult(requestCode, resultCode, data);
+	}
+	
+	/**
+	 * 查询商品
+	 * @param code
+	 */
+	private void serachCommod(String code){
+		Map<String, Object> map=new HashMap<String, Object>();
+		map.put("code", code);
+		map.put("md", SystemParm.md);
+		try {
+			HtClient.post(activity,"sale/serachCommod", map,"utf-8",new cn.hisaas.huiguanli.net.ListHttpResponseHandler(new TypeReference<SerachResultOfReturn<SpModel>>(){} ,"utf-8", commSerachDo));
+    	} catch (UnsupportedEncodingException e) {
+			Toast.makeText(activity, e.getMessage(), Toast.LENGTH_SHORT).show();
+		}
+	}
+	
+	
+	/**
+	 * 商品查询监听
+	 * @author Fan
+	 */
+	private SerachListenerDo<SpModel> commSerachDo =new SerachListenerDo<SpModel>() {
+		
+		@Override
+		public void onRequstStart() {
+			Util.showProgressDialog(activity, null, "正在查询...");
+		}
+		@Override
+		public void onRequstFish(SerachResultOfReturn<SpModel> result) {
+			Util.dismissDialog();
+			if(result!=null){
+				if(result.getSuccess()){
+					SpModel model=result.getData();
+					model.setSl(1.0d);
+					model.setYh(0d);
+					model.setYs(Cal.mul(model.getDj(),model.getSl()));
+					adapter.addModel(model);
+					adapter.notifyDataSetChanged();
+					spListView.setSelection(adapter.getCount()-1);
+					allExchange.setEnabled(true);
+				}else{
+					Toast.makeText(activity, result.getMessage(), Toast.LENGTH_SHORT).show();
+				}
+			}else{
+				Toast.makeText(activity, "返回为空", Toast.LENGTH_SHORT).show();
+			}
+		}
+		@Override
+		public void onRequstFail(int code,String message) {
+			Util.dismissDialog();
+			Toast.makeText(activity, message, Toast.LENGTH_SHORT).show();
+		}
+	};
+
+	
+
+	/**
+	 * 输入数量和积分的对话框
+	 * @param id
+	 * @param title
+	 * @param position
+	 */
+	private void showInputDialog(final int id,String title, final int position) {
+	    /*@setView 装入一个EditView
+	     */
+	    final EditText editText = new EditText(activity);
+	    editText.setInputType(InputType.TYPE_CLASS_NUMBER);
+	    AlertDialog.Builder inputDialog = 
+	        new AlertDialog.Builder(activity);
+	    inputDialog.setTitle(title).setView(editText);
+	    inputDialog.setPositiveButton("确定", 
+	        new DialogInterface.OnClickListener() {
+	        @Override
+	        public void onClick(DialogInterface dialog, int which) {
+	        	switch (id) {
+					case R.id.all_exchange_in_credits_fragment:
+						String jf=jfText.getText().toString().trim();
+						String jiFen=editText.getText().toString().trim();
+						if (jf==null||"".equals(jf)) {
+							Toast.makeText(activity,"请输入会员卡号",Toast.LENGTH_SHORT).show();
+						}else if(jiFen==null||"".equals(jiFen)){
+							Toast.makeText(activity,"请输入您要兑换的积分",Toast.LENGTH_SHORT).show();
+						}else if(Cal.sub(jf,jiFen)<0){
+							Toast.makeText(activity,"卡内积分不足",Toast.LENGTH_SHORT).show();
+						}else{
+							requestJFChange(jiFen);
+						}
+						break;
+					case R.id.sp_display_in_credits_fragment:
+						if (editText.getText().toString().trim()==null||"".equals(editText.getText().toString().trim())||"0".equals(editText.getText().toString().trim())) {
+							Toast.makeText(activity, "请输入正确数量", Toast.LENGTH_SHORT).show();
+							return;
+						}
+						double num=Double.parseDouble(editText.getText().toString().trim());
+						adapter.getItem(position).setSl(num);
+						adapter.notifyDataSetChanged();
+						num=0d;
+						break;
+					default:
+						break;
+				}
+	        }
+	    }).setNegativeButton("取消", new DialogInterface.OnClickListener() {
+			
+			@Override
+			public void onClick(DialogInterface dialog, int arg1) {
+				// TODO Auto-generated method stub
+				dialog.dismiss();
+			}
+		}).show();
+	}
+
+	/**
+	 * 进行积分兑换
+	 * @param jiFen
+	 */
+	protected void requestJFChange(String jiFen) {
+		// TODO Auto-generated method stub
+		Map<String,String> map=new HashMap<String, String>();
+		map.put("cardNo", cardNoEdit.getText().toString());
+		map.put("md", SystemParm.md);
+		map.put("jf", jiFen);
+		map.put("spName", "");// 暂时传入空值
+		map.put("oper", SystemParm.opper);
+		map.put("lsh", Util.getLSH());
+		try {
+			HtClient.post(activity,"member/jfRedeem", "utf-8", map, exchangeListener, "utf-8");
+		} catch (Exception e) {
+			// TODO: handle exception
+			Toast.makeText(activity, e.getMessage(), Toast.LENGTH_SHORT).show();
+		}
+	}
+	
+	/**
+	 * 积分兑换监听
+	 */
+	private UpListenerDo exchangeListener=new UpListenerDo() {
+		
+		@Override
+		public void onRequstStart() {
+			// TODO Auto-generated method stub
+			Util.showProgressDialog(activity, null, "正在操作...");
+			
+		}
+		
+		@Override
+		public void onRequstFish(UpResultOfReturn model) {
+			// TODO Auto-generated method stub
+			if (model.isSuccess()) {
+				Util.dismissDialog();
+				Util.showResultDialog(activity, "兑换成功", "提示", true, 1);
+				cardNoEdit.setText(null);
+				jfText.setText(null);
+				allExchange.setEnabled(false);
+				adapter.clearAll();
+				adapter.notifyDataSetChanged();
+//				Log.e("test",model.getMessage());
+			}else{
+				Util.dismissDialog();
+				Toast.makeText(activity, model.getMessage(), Toast.LENGTH_SHORT).show();
+			}
+			
+		}
+		
+		@Override
+		public void onRequstFail(int code, String message) {
+			// TODO Auto-generated method stub
+			Util.dismissDialog();
+			Toast.makeText(activity, message, Toast.LENGTH_SHORT).show();
+		}
+	};
+
+	
+	
+	@Override
+	public void hideDo(Activity activity) {
+		// TODO Auto-generated method stub
+		super.hideDo(activity);
+		jfText.setText(null);
+		cardNoEdit.setText(null);
+		allExchange.setEnabled(false);
+		adapter.clearAll();
+		adapter.notifyDataSetChanged();
+	}
+	
+	@Override
+	public void onDestroy() {
+		// TODO Auto-generated method stub
+		super.onDestroy();
+		adapter=null;
+		
+	} 
+	
+	
+	
+}

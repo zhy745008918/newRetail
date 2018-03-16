@@ -1,0 +1,35 @@
+package cn.hisaas.huiguanli.frame;
+
+import cn.hisaas.huiguanli.activity.R;
+import android.os.Bundle;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.GridView;
+import android.widget.LinearLayout;
+
+public class HYFragment extends BaseFragment {
+
+	private GridView grid;
+	private LinearLayout linear;
+	
+	
+	@Override
+	public View onCreateView(LayoutInflater inflater, ViewGroup container,
+			Bundle savedInstanceState) {
+		// TODO Auto-generated method stub
+		View view=inflater.inflate(R.layout.hy_frame_layout, container, false);
+		grid=(GridView) view.findViewById(R.id.hy_frame_grid);
+		linear=(LinearLayout)view.findViewById(R.id.hy_frame_linear);
+		initData();
+		return view;
+	}
+
+
+	private void initData() {
+		// TODO Auto-generated method stub
+		
+	}
+	
+	
+}

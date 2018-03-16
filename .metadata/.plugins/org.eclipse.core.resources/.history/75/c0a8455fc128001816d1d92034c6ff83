@@ -1,0 +1,14 @@
+package cn.hisaas.huiguanli.adaper;
+
+import cn.hisaas.huiguanli.adaper.base.CommonAdapter;
+import cn.hisaas.huiguanli.adaper.holder.ViewHolder;
+
+public class HYFrameAdapter extends CommonAdapter {
+
+	@Override
+	public void convert(ViewHolder viewHolder, Object t) {
+		// TODO Auto-generated method stub
+
+	}
+
+}

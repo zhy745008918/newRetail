@@ -1,0 +1,32 @@
+package cn.hisaas.huiguanli.adaper;
+
+import java.util.List;
+
+import android.content.Context;
+import android.util.SparseArray;
+import android.widget.ImageView;
+import android.widget.TextView;
+import cn.hisaas.huiguanli.activity.R;
+import cn.hisaas.huiguanli.adaper.base.CommonAdapter;
+import cn.hisaas.huiguanli.adaper.holder.ViewHolder;
+
+public class HYFrameAdapter extends CommonAdapter<SparseArray<Object>> {
+
+	public HYFrameAdapter(Context context, List<SparseArray<Object>> datas,
+			int layoutId) {
+		super(context, datas, layoutId);
+		// TODO Auto-generated constructor stub
+	}
+
+
+	@Override
+	public void convert(ViewHolder viewHolder, SparseArray<Object> t) {
+		// TODO Auto-generated method stub
+		ImageView image=viewHolder.getView(R.id.hy_item_image);
+		TextView text=viewHolder.getView(R.id.hy_item_text);
+		image.setImageResource((Integer)(t.get(0)));
+		text.setText((String)(t.get(1)));
+		
+	}
+
+}

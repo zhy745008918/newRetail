@@ -1,0 +1,8 @@
+package cn.hisaas.huiguanli.frame;
+
+public class HYFragment extends BaseFragment {
+
+	
+	
+	
+}

@@ -1,0 +1,45 @@
+package cn.hisaas.huiguanli.tools;
+
+import java.lang.reflect.Method;
+
+import android.app.Activity;
+import android.graphics.Point;
+import android.util.DisplayMetrics;
+import android.view.Display;
+
+
+/**
+ * »ñÈ¡ÆÁÄ»³ß´ç
+ * @author Administrator
+ *
+ */
+public class ScreenInchUtil {
+	
+	public int[] getScreenInch(Activity activity){
+		int[] inch=new int[2];
+		try {    
+	        Display display = activity.getWindowManager().getDefaultDisplay();    
+	        DisplayMetrics metrics = new DisplayMetrics();    
+	        display.getMetrics(metrics);    
+	        if (android.os.Build.VERSION.SDK_INT >= 17) {    
+	            Point size = new Point();    
+	            display.getRealSize(size);    
+	            inch[0] = size.x;    
+	            inch[1] = size.y;    
+	        } else if (android.os.Build.VERSION.SDK_INT < 17    
+	                && android.os.Build.VERSION.SDK_INT >= 14) {    
+	            Method mGetRawH = Display.class.getMethod("getRawHeight");    
+	            Method mGetRawW = Display.class.getMethod("getRawWidth");    
+	            inch[0]  = (Integer) mGetRawW.invoke(display);    
+	            inch[1]  = (Integer) mGetRawH.invoke(display);    
+	        } else {    
+	        	inch[0] = metrics.widthPixels;    
+	            inch[1]  = metrics.heightPixels;    
+	        }    
+	    } catch (Exception e) {    
+	        e.printStackTrace();    
+	    }    
+		return inch;
+	}
+	
+}

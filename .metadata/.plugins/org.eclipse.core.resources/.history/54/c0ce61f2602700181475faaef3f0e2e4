@@ -1,0 +1,785 @@
+package cn.hisaas.huiguanli.frame;
+
+import java.io.UnsupportedEncodingException;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import com.alibaba.fastjson.TypeReference;
+
+import android.annotation.SuppressLint;
+import android.app.Activity;
+import android.content.DialogInterface;
+import android.content.Intent;
+import android.os.Bundle;
+import android.support.v4.view.ViewPager;
+import android.text.InputType;
+import android.util.Log;
+import android.view.KeyEvent;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.View.OnClickListener;
+import android.view.View.OnFocusChangeListener;
+import android.view.View.OnKeyListener;
+import android.view.ViewGroup;
+import android.widget.AdapterView;
+import android.widget.AdapterView.OnItemClickListener;
+import android.widget.AdapterView.OnItemLongClickListener;
+import android.widget.EditText;
+import android.widget.ImageView;
+import android.widget.ListView;
+import android.widget.TextView;
+import android.widget.Toast;
+import cn.hisaas.huiguanli.activity.MainActivity;
+import cn.hisaas.huiguanli.activity.R;
+import cn.hisaas.huiguanli.activity.dialog.HYSKActivity;
+import cn.hisaas.huiguanli.activity.dialog.JZActivity;
+import cn.hisaas.huiguanli.activity.dialog.TmInputActivity;
+import cn.hisaas.huiguanli.activity.dialog.XGJEActivity;
+import cn.hisaas.huiguanli.activity.eum.ResultEnum;
+import cn.hisaas.huiguanli.adaper.SYListAdaper;
+import cn.hisaas.huiguanli.model.InvCom;
+import cn.hisaas.huiguanli.model.PublicMember;
+import cn.hisaas.huiguanli.model.PublicMember1;
+import cn.hisaas.huiguanli.model.SerachResultOfReturn;
+import cn.hisaas.huiguanli.model.SpModel;
+import cn.hisaas.huiguanli.net.HtClient;
+import cn.hisaas.huiguanli.net.listener.SerachListenerDo;
+import cn.hisaas.huiguanli.parm.SystemParm;
+import cn.hisaas.huiguanli.tools.Cal;
+import cn.hisaas.huiguanli.tools.Hide;
+import cn.hisaas.huiguanli.tools.Print;
+import cn.hisaas.huiguanli.tools.Util;
+
+public class SYFragment extends BaseFragment implements OnClickListener {
+
+	private TextView hjjeText;
+	private TextView hjjsText;
+	private TextView lshText;
+	private TextView hykhText;
+	private TextView advertTitle;
+	private ListView listView;
+	private SYListAdaper adapter;
+	private MainActivity activity;
+	private PublicMember pm;
+	private EditText sy_tm_input;
+	private double ysje;
+	private double sl;
+	private double zl;
+	private double yh;// 返现
+	private double dzq;// 电子券支付
+	// 选择的操作类型
+	private int id;
+	private double xj;
+	private double hy;
+
+	// 轮播图片url集合
+	private ViewPager advertPicture;
+	private List<ImageView> imageList;
+	String[] titles = { "石家庄汇天酉申科技-----------", "石家庄正阳城市广场------------",
+	"石家庄东胜广场                                  " };
+	
+	@Override
+	public View onCreateView(LayoutInflater inflater, ViewGroup container,
+			Bundle savedInstanceState) {
+		View view = inflater.inflate(R.layout.sy_layout, container, false);
+		view.findViewById(R.id.sy_tm_button).setOnClickListener(this);
+		view.findViewById(R.id.sy_jz_button).setOnClickListener(this);
+		view.findViewById(R.id.sy_hy_button).setOnClickListener(this);
+		view.findViewById(R.id.sy_ql_button).setOnClickListener(this);
+		hjjeText = (TextView) view.findViewById(R.id.sy_hj_value);
+		hjjsText = (TextView) view.findViewById(R.id.sy_spjs_value);
+		lshText = (TextView) view.findViewById(R.id.sy_lsh_value);
+		hykhText = (TextView) view.findViewById(R.id.sy_hykh_value);
+		advertTitle = (TextView) view.findViewById(R.id.sy_advert_title);
+		advertTitle.setSelected(true);
+		
+		listView = (ListView) view.findViewById(R.id.sy_list_view);
+		listView.setFocusable(false);
+		listView.setItemsCanFocus(false);
+		listView.setOnItemClickListener(new OnItemClickListener() {
+
+			@Override
+			public void onItemClick(AdapterView<?> arg0, View arg1,
+					int position, long arg3) {
+				// TODO Auto-generated method stub
+				if (adapter.getItem(position).getCode().equals("0000000000")) {
+					// 弹出对话框修改数量为0，对话框添加键盘
+					// 零售价和应收改成录入信息
+					Intent intent = new Intent(activity, XGJEActivity.class);
+					intent.putExtra("position", position);
+					activity.startActivityForResult(intent, 0);
+					intent = null;
+				} else {
+					return;
+				}
+
+			}
+		});
+		listView.setOnItemLongClickListener(new OnItemLongClickListener() {
+			@Override
+			public boolean onItemLongClick(AdapterView<?> parent, View view,
+					final int position, long id) {
+				Util.showListDialog(activity, null, new String[] { "删除" },
+						new DialogInterface.OnClickListener() {
+							@Override
+							public void onClick(DialogInterface dialog,
+									int which) {
+								switch (which) {
+								case 0:
+									adapter.getList().remove(position);
+									adapter.notifyDataSetChanged();
+									cs();
+									break;
+								}
+
+							}
+						}, true, 1, false);
+				return true;
+			}
+		});
+		sy_tm_input = (EditText) view.findViewById(R.id.sy_tm_input);
+		sy_tm_input.setOnKeyListener(new OnKeyListener() {
+			@Override
+			public boolean onKey(View v, int keyCode, KeyEvent event) {
+				if (keyCode == KeyEvent.KEYCODE_ENTER) {
+					if (event.getAction() == KeyEvent.ACTION_DOWN) {
+						String code = sy_tm_input.getText().toString();
+						if (code != null && code.trim().length() != 0)
+							serachCommod(code);
+						return true;
+					}
+				}
+				return false;
+			}
+		});
+		sy_tm_input.setOnFocusChangeListener(new OnFocusChangeListener() {
+			@Override
+			public void onFocusChange(View v, boolean hasFocus) {
+				if (hasFocus) {
+					Hide.hideInputWindow(activity);
+				}
+			}
+		});
+		sy_tm_input.setInputType(InputType.TYPE_NULL);
+		sy_tm_input.requestFocus();
+		adapter = new SYListAdaper(getActivity());
+		listView.setAdapter(adapter);
+		activity = (MainActivity) this.getActivity();
+		
+		advertPicture = (ViewPager) view.findViewById(R.id.sy_advert_picture);
+		imageList=new ArrayList<ImageView>();
+		int[] images = { R.drawable.weclome, R.drawable.timg, R.drawable.sun };
+		
+		for (int i = 0; i < images.length; i++) {
+			ImageView im=new ImageView(activity);
+			im.setBackgroundResource(images[i]);
+			imageList.add(im);
+		}
+		
+		clearAll();
+		return view;
+	}
+
+	private volatile boolean bo = false;
+
+	@Override
+	public void onClick(View v) {
+		Intent myIntent = null;
+		switch (v.getId()) {
+		case R.id.sy_tm_button:
+			id = R.id.sy_tm_button;
+			myIntent = new Intent(activity, TmInputActivity.class);
+			activity.startActivityForResult(myIntent, 0);
+			break;
+		case R.id.sy_jz_button:
+			id = R.id.sy_jz_button;
+			if (adapter.getCount() == 0) {
+				Toast.makeText(activity, "请先录入商品", Toast.LENGTH_SHORT).show();
+				return;
+			}
+			if (bo == true)// 防止多次点击结账按钮
+				return;
+			bo = true;
+			try {
+				myIntent = new Intent(activity, JZActivity.class);
+				myIntent.putExtra("money", ysje);
+				if (pm != null) {
+					myIntent.putExtra("model", pm);
+					myIntent.putExtra("lsh", lshText.getText().toString());
+				}
+				activity.startActivityForResult(myIntent, 0);
+			} catch (Exception e) {// 出现异常重置
+				bo = false;
+			}
+			break;
+		case R.id.sy_ql_button:
+			id = R.id.sy_ql_button;
+			clearAll();
+			break;
+		case R.id.sy_hy_button:
+			id = R.id.sy_hy_button;
+			myIntent = new Intent(activity, HYSKActivity.class);
+			activity.startActivityForResult(myIntent, 0);
+			break;
+		}
+		sy_tm_input.setText(null);
+		sy_tm_input.requestFocus();
+		myIntent = null;
+	}
+
+	/**
+	 * 清空全部
+	 */
+	private void clearAll() {
+		hjjeText.setText(String.format("%.2f元", 0.00d));
+		hjjsText.setText(String.format("%.2f件", 0.00d));
+		lshText.setText(Util.getLSH());
+		hykhText.setText(null);
+		pm = null;
+		sy_tm_input.setText(null);
+		sy_tm_input.requestFocus();
+		adapter.clearAll();
+		adapter.notifyDataSetChanged();
+		ysje = 0d;
+		sl = 0d;
+		zl = 0d;
+		hy = 0d;
+		xj = 0d;
+		yh = 0d;
+		bo = false;
+	}
+
+	@Override
+	public void onActivityResult(int requestCode, int resultCode, Intent data) {
+		sy_tm_input.setText(null);
+		sy_tm_input.requestFocus();
+		switch (resultCode) {
+		case ResultEnum.SUCCESS:
+			switch (id) {
+			case R.id.sy_tm_button:
+				serachCommod(data.getStringExtra("code"));
+				break;
+			case R.id.sy_jz_button:
+				break;
+			case R.id.sy_ql_button:
+				break;
+			case R.id.sy_hy_button:
+				serachHy(data.getStringExtra("code"),
+						data.getStringExtra("tel"));
+				break;
+			}
+			break;
+		case ResultEnum.SET_CLOSE:// 结账
+			xj = data.getDoubleExtra("xj", 0d);
+			hy = data.getDoubleExtra("hy", 0d);
+			dzq = data.getDoubleExtra("dzq", 0d);
+			if (hy > 0 && pm != null) {
+				pm.setMoney(data.getDoubleExtra("dqye", 0d));
+			}
+			if (dzq > 0 && pm != null) {
+				pm.setDzq(data.getDoubleExtra("dqdzq", 0d));
+			}
+			zl = data.getDoubleExtra("zl", 0d);
+			String lsh = data.getStringExtra("lsh");
+			if (lsh != null && !lsh.equals(this.lshText.getText().toString())) {
+				this.lshText.setText(lsh);
+			}
+			check(true);
+			break;
+		case ResultEnum.SM_FAILURE:
+			break;
+		case ResultEnum.FAILURE:
+			bo = false;
+			break;
+		case ResultEnum.CHANGE_SUCCESS:
+			String s = data.getStringExtra("code");
+			Double code = Double.parseDouble(s);
+			int position = data.getIntExtra("position", 0);
+			Log.e("TAG", code + "");
+			adapter.getItem(position).setDj(code);
+			adapter.getItem(position).setYs(code);
+			adapter.notifyDataSetChanged();
+			cs();
+			s = null;
+			code = null;
+			position = 0;
+			break;
+		}
+		super.onActivityResult(requestCode, resultCode, data);
+	}
+
+	/**
+	 * 查询会员信息
+	 * 
+	 * @param code
+	 * @param tel
+	 */
+	private void serachHy(String code, String tel) {
+		Map<String, Object> map = new HashMap<String, Object>();
+		map.put("cardNo", code);
+		map.put("tel", tel);
+		map.put("md", SystemParm.md);
+		try {
+			HtClient.post(
+					activity,
+					"member/serachMember",
+					map,
+					"utf-8",
+					new cn.hisaas.huiguanli.net.ListHttpResponseHandler(
+							new TypeReference<SerachResultOfReturn<PublicMember1>>() {
+							}, "utf-8", hySerachDo));
+		} catch (UnsupportedEncodingException e) {
+			Toast.makeText(activity, e.getMessage(), Toast.LENGTH_SHORT).show();
+		}
+	}
+
+	/**
+	 * 会员查询监听
+	 * 
+	 * @author Fan
+	 * 
+	 */
+	private SerachListenerDo<PublicMember1> hySerachDo = new SerachListenerDo<PublicMember1>() {
+		@Override
+		public void onRequstStart() {
+			Util.showProgressDialog(activity, null, "正在查询...");
+		}
+
+		@Override
+		public void onRequstFish(SerachResultOfReturn<PublicMember1> result) {
+			Util.dismissDialog();
+			sy_tm_input.setText(null);
+			sy_tm_input.requestFocus();
+			if (result != null) {
+				if (result.getSuccess()) {
+					pm = new PublicMember(result.getData());
+					hykhText.setText(pm.getCardno());
+					Log.e("test", pm.getJf() + "");
+					cshyj();
+				} else {
+					Toast.makeText(activity, result.getMessage(),
+							Toast.LENGTH_SHORT).show();
+				}
+			} else {
+				Toast.makeText(activity, "返回为空", Toast.LENGTH_SHORT).show();
+			}
+		}
+
+		@Override
+		public void onRequstFail(int code, String message) {
+			Util.dismissDialog();
+			sy_tm_input.setText(null);
+			sy_tm_input.requestFocus();
+			Toast.makeText(activity, message, Toast.LENGTH_SHORT).show();
+		}
+	};
+
+	/**
+	 * 重算会员价
+	 */
+	private void cshyj() {
+		ysje = 0;
+		yh = 0d;
+		sl = 0d;
+		List<SpModel> list = adapter.getList();
+		for (SpModel model : list) {
+			model.setYh(Cal.mul(model.getSl(), model.getHyj()));
+			yh = Cal.add(model.getYh(), yh);
+			sl = Cal.add(model.getSl(), sl);
+			ysje = Cal.add(ysje, model.getYs());
+		}
+		hjjeText.setText(String.format("%.2f元", ysje));
+		hjjsText.setText(String.format("%.2f件", sl));
+		adapter.notifyDataSetChanged();
+	}
+
+	/**
+	 * 重算
+	 */
+	private void cs() {
+		ysje = 0;
+		yh = 0d;
+		sl = 0d;
+		List<SpModel> list = adapter.getList();
+		for (SpModel model : list) {
+			yh = Cal.add(model.getYh(), yh);
+			ysje = Cal.add(ysje, model.getYs());
+			sl = Cal.add(model.getSl(), sl);
+		}
+		hjjeText.setText(String.format("%.2f元", ysje));
+		hjjsText.setText(String.format("%.2f件", sl));
+		adapter.notifyDataSetChanged();
+	}
+
+	/**
+	 * 商品查询监听
+	 * 
+	 * @author Fan
+	 */
+	private SerachListenerDo<SpModel> commSerachDo = new SerachListenerDo<SpModel>() {
+
+		@Override
+		public void onRequstStart() {
+			sy_tm_input.setText(null);
+			Util.showProgressDialog(activity, null, "正在查询...");
+		}
+
+		@Override
+		public void onRequstFish(SerachResultOfReturn<SpModel> result) {
+			Util.dismissDialog();
+			sy_tm_input.setText(null);
+			sy_tm_input.requestFocus();
+			if (result != null) {
+				if (result.getSuccess()) {
+					SpModel model = result.getData();
+					model.setSl(1.0d);
+					if (pm != null && model.getDj() > model.getHyj()) {
+						model.setYh(Cal.mul(model.getSl(), model.getHyj()));
+						yh = Cal.add(model.getYh(), yh);
+					} else {
+						model.setYh(0d);
+					}
+					model.setYs(Cal.mul(model.getDj(), model.getSl()));
+					ysje = Cal.add(model.getYs(), ysje);
+					sl = Cal.add(sl, model.getSl());
+					hjjeText.setText(String.format("%.2f元", ysje));
+					hjjsText.setText(String.format("%.2f件", sl));
+
+					adapter.addModel(model);
+					adapter.notifyDataSetChanged();
+					listView.setSelection(adapter.getCount() - 1);
+					if (model.getCode().equals("0000000000")) {
+						// 弹出对话框修改数量为0，对话框添加键盘
+						// 零售价和应收改成录入信息
+						Intent intent = new Intent(activity, XGJEActivity.class);
+						intent.putExtra("position", adapter.getCount() - 1);
+						activity.startActivityForResult(intent, 0);
+						intent = null;
+					}
+
+				} else {
+					Toast.makeText(activity, result.getMessage(),
+							Toast.LENGTH_SHORT).show();
+				}
+			} else {
+				Toast.makeText(activity, "返回为空", Toast.LENGTH_SHORT).show();
+			}
+		}
+
+		@Override
+		public void onRequstFail(int code, String message) {
+			Util.dismissDialog();
+			Toast.makeText(activity, message, Toast.LENGTH_SHORT).show();
+		}
+	};
+
+	/**
+	 * 保存
+	 */
+	private void check(boolean frist) {
+		Map<String, Object> map = new HashMap<String, Object>();
+		map.put("md", SystemParm.md);
+		map.put("opper", SystemParm.opper);
+		List<SpModel> list = adapter.getList();
+		List<InvCom> li = new ArrayList<InvCom>();
+		for (SpModel s : list) {
+			InvCom c = new InvCom();
+			c.setcCode(s.getCode());
+			c.setHyj(s.getHyj());
+			c.setLsj(s.getDj());
+			c.setSl(s.getSl());
+			li.add(c);
+		}
+		map.put("mx", li);
+		map.put("xj", xj);
+		map.put("id", lshText.getText().toString());// TODO
+		map.put("ys", ysje);
+		map.put("zl", zl);
+		map.put("sl", sl);
+		if (pm != null) {
+			map.put("cardNo", pm.getCardno());
+			map.put("hy", hy);// 会员
+			map.put("dzq", dzq);// 电子券
+			if (xj > 0 || dzq > 0) {
+				yh = 0d;
+			}
+			map.put("yh", yh);// 返现
+			map.put("isHy", true);
+		} else {
+			map.put("isHy", false);
+		}
+		map.put("isFrist", frist);
+		try {
+			HtClient.post(
+					activity,
+					"sale/check",
+					map,
+					"utf-8",
+					new cn.hisaas.huiguanli.net.ListHttpResponseHandler(
+							new TypeReference<SerachResultOfReturn<Map<String, Object>>>() {
+							}, "utf-8", checkToDo));
+		} catch (UnsupportedEncodingException e) {
+			Toast.makeText(activity, e.getMessage(), Toast.LENGTH_SHORT).show();
+			bo = false;
+		}
+	}
+
+	/**
+	 * 查询商品
+	 * 
+	 * @param code
+	 */
+	private void serachCommod(String code) {
+		Map<String, Object> map = new HashMap<String, Object>();
+		map.put("code", code);
+		map.put("md", SystemParm.md);
+		try {
+			HtClient.post(activity, "sale/serachCommod", map, "utf-8",
+					new cn.hisaas.huiguanli.net.ListHttpResponseHandler(
+							new TypeReference<SerachResultOfReturn<SpModel>>() {
+							}, "utf-8", commSerachDo));
+		} catch (UnsupportedEncodingException e) {
+			Toast.makeText(activity, e.getMessage(), Toast.LENGTH_SHORT).show();
+		}
+	}
+
+	/**
+	 * 结账监听
+	 * 
+	 * @author Fan
+	 * 
+	 */
+	private SerachListenerDo<Map<String, Object>> checkToDo = new SerachListenerDo<Map<String, Object>>() {
+		@Override
+		public void onRequstStart() {
+			if (!Util.canUse()) {// 如果不可用则创建
+				Util.showProgressDialog(activity, null, "正在操作...");
+			}
+		}
+
+		@Override
+		public void onRequstFish(
+				SerachResultOfReturn<Map<String, Object>> result) {
+			if (result != null) {
+				if (result.getSuccess()) {
+					Util.dismissDialog();
+					if (pm != null) {
+						try {
+							yh = Double.parseDouble(String.valueOf(result
+									.getData().get("fx")));
+						} catch (Exception e) {
+						}
+						// 根据最后的结账返回的当前电子券重设
+						pm.setDzq(Cal.add(yh, pm.getDzq()));
+					}
+					// 打印
+					try {
+						Print.getPrintTerUtils(activity).dop(
+								getPrintTxt().toString());
+					} catch (Exception e) {
+						Toast.makeText(activity, e.getMessage(),
+								Toast.LENGTH_SHORT).show();
+					}
+					clearAll();
+				} else {
+					Object object = null;
+					if (result.getData() != null
+							&& (object = result.getData().get("error")) != null) {
+						if (object.toString().equals("repeat")) {// 因流水号重复 ==>
+																	// 重置流水号
+							lshText.setText(Util.getLSH());
+							check(true);// 因为是新的流水号相当于第一次
+							return;
+						}
+					} else {// 下边的信息是出错了
+						String errorMessage = result.getMessage();
+						switch (Util.analyze(errorMessage)) {
+						case NEW_DO:
+							lshText.setText(Util.getLSH());
+							check(true);
+							return;
+						case OLD_DO:
+							check(false);
+							return;
+						default:
+							break;
+						}
+						// if(errorMessage==null){//错误信息为空结果未知
+						// check(false);
+						// return;
+						// }else if("fx_error".equals(errorMessage)){
+						// check(false);
+						// return;
+						// }else if("repeat".equals(errorMessage)){
+						// lshText.setText(Util.getLSH());
+						// check(true);
+						// return;
+						// }else if("db_time_out".equals(errorMessage)){
+						// check(false);
+						// return;
+						// }else if("db_rollback_error".equals(errorMessage)){
+						// check(false);
+						// return;
+						// }
+						Util.dismissDialog();
+						Toast.makeText(activity, errorMessage,
+								Toast.LENGTH_SHORT).show();
+					}
+				}
+			} else {
+				check(false);
+				return;
+			}
+			bo = false;// 重置结账按钮为可用
+		}
+
+		@Override
+		public void onRequstFail(int code, String message) {
+			Util.dismissDialog();
+			switch (code) {
+			case 0:
+			case 504:// 结果未知
+				Util.showDialogWithButtons(activity, "错误提示",
+						"连接超时,如果想验证上次的操作是否成功请点击\"确定\",点击\"取消\"将会默认上次的操作没成功",
+						new DialogInterface.OnClickListener() {
+							@Override
+							public void onClick(DialogInterface dialog,
+									int which) {
+								check(false);
+							}
+						}, new DialogInterface.OnClickListener() {
+							@Override
+							public void onClick(DialogInterface dialog,
+									int which) {
+								bo = false;// 重置结账按钮为可用
+							}
+						});
+
+				break;
+			default:
+				Toast.makeText(activity, message, Toast.LENGTH_SHORT).show();
+				bo = false;// 重置结账按钮为可用
+				break;
+			}
+		}
+	};
+
+	/**
+	 * 生成打印数据
+	 * 
+	 * @return
+	 */
+	@SuppressLint("SimpleDateFormat")
+	private StringBuffer getPrintTxt() {
+		StringBuffer sb = new StringBuffer();
+		sb.append("\n\n\n");
+		sb.append("            欢迎光临\n");
+		// sb.append("公司名称:沙巴兔\n");
+		sb.append("店铺名称:");
+		sb.append(SystemParm.mdName);
+		sb.append("\n");
+		sb.append("收银员:");
+		sb.append(SystemParm.opperName);
+		sb.append("\n");
+		sb.append("流水号:");
+		sb.append(lshText.getText().toString());
+		sb.append("\n");
+		sb.append("时间:");
+		sb.append(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss")
+				.format(new Date()));
+		sb.append("\n");
+		if (pm != null) {
+			sb.append("会员卡号:");
+			sb.append(pm.getCardno());
+			sb.append("\n");
+		}
+		sb.append("--------------------------------\n");
+		// sb.append("数量  销售价 会员价 优惠  小计\n");
+		// List<SpModel> list=adapter.getList();
+		// int row=1;
+		// for(SpModel s:list){
+		// sb.append(row);
+		// sb.append("、");
+		// sb.append(s.getName());sb.append("\n");
+		// sb.append(Cal.calSpaces(s.getSl(),6));
+		// sb.append(Cal.calSpaces(s.getDj(),7));
+		// sb.append(Cal.calSpaces(s.getHyj(),7));
+		// sb.append(Cal.calSpaces(s.getYh(),6));
+		// sb.append(s.getYs());
+		// sb.append("\n");
+		// row++;
+		// }
+		sb.append("数量   销售价  会员返券  小计\n");
+		List<SpModel> list = adapter.getList();
+		int row = 1;
+		for (SpModel s : list) {
+			sb.append(row);
+			sb.append("、");
+			sb.append(s.getName());
+			sb.append("\n");
+			sb.append(Cal.calSpaces(s.getSl(), 7));
+			sb.append(Cal.calSpaces(s.getDj(), 8));
+			sb.append(Cal.calSpaces(s.getYh(), 10));
+			sb.append(s.getYs());
+			sb.append("\n");
+			row++;
+		}
+		sb.append("--------------------------------\n");
+		sb.append("合计金额:");
+		sb.append(hjjeText.getText().toString());
+		sb.append("\n");
+		sb.append("数量合计:");
+		sb.append(hjjsText.getText().toString());
+		sb.append("\n");
+		if (pm != null) {
+			sb.append("本单返券:");
+			sb.append(yh);
+			sb.append("\n");
+			if (hy > 0) {
+				sb.append("会员支付:");
+				sb.append(hy);
+				sb.append("\n");
+			}
+			if (dzq > 0) {
+				sb.append("电子券支付:");
+				sb.append(dzq);
+				sb.append("\n");
+			}
+			sb.append("当前余额:");
+			sb.append(pm.getMoney());
+			sb.append("\n");
+			sb.append("当前积分:");
+			sb.append(pm.getJf());
+			sb.append("\n");
+			sb.append("当前电子券:");
+			sb.append(pm.getDzq());
+			sb.append("\n");
+		}
+		if (xj != 0) {
+			sb.append("现金支付:");
+			sb.append(xj);
+			sb.append("\n");
+		}
+		if (zl != 0) {
+			sb.append("找零:");
+			sb.append(zl);
+			sb.append("\n");
+		}
+		sb.append("\n\n\n\n");
+		sb.append(new String(new byte[] { 27, 'p', 0, 60, (byte) 255 }));// 开钱箱
+		return sb;
+	}
+
+	@Override
+	public void showDo(Activity activity) {
+		super.showDo(activity);
+		if (sy_tm_input != null) {
+			sy_tm_input.setText(null);
+			sy_tm_input.requestFocus();
+		}
+	}
+}

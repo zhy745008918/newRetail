@@ -1,0 +1,89 @@
+package cn.hisaas.huiguanli.activity.dialog;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import android.content.res.TypedArray;
+import android.os.Bundle;
+import android.view.MotionEvent;
+import android.view.View;
+import android.view.View.OnClickListener;
+import cn.hisaas.huiguanli.activity.R;
+import cn.hisaas.huiguanli.adaper.BasePageAdapter;
+import cn.hisaas.huiguanli.frame.user.ShowUserFragment;
+import cn.hisaas.huiguanli.frame.user.UpdatePassFragment;
+import cn.hisaas.huiguanli.frame.user.UserAddFragment;
+import cn.hisaas.huiguanli.frame.user.UserBasicFragment;
+import cn.hisaas.huiguanli.parm.SystemParm;
+import cn.hisaas.huiguanli.ui.ViewPagerHorizontalScrollView;
+import cn.hisaas.huiguanli.ui.ViewPagerHorizontalScrollView.OnMyViewSelect;
+
+public class UserActivity extends FragmentActivity implements OnClickListener,OnMyViewSelect{
+
+	private ViewPager mPager;
+	private ViewPagerHorizontalScrollView scrollView;
+	private BasePageAdapter<Fragment> adapter;
+	private int activityCloseEnterAnimation;
+	private int activityCloseExitAnimation;
+	
+	@Override
+	protected void onCreate(Bundle savedInstanceState) {
+		super.onCreate(savedInstanceState);
+		TypedArray activityStyle = getTheme().obtainStyledAttributes(new int[] {android.R.attr.windowAnimationStyle});
+		int windowAnimationStyleResId = activityStyle.getResourceId(0, 0);      
+		activityStyle.recycle();
+		activityStyle = getTheme().obtainStyledAttributes(windowAnimationStyleResId, new int[] {android.R.attr.activityCloseEnterAnimation, android.R.attr.activityCloseExitAnimation});
+		activityCloseEnterAnimation = activityStyle.getResourceId(0, 0);
+		activityCloseExitAnimation = activityStyle.getResourceId(1, 0);
+		activityStyle.recycle();
+		activityStyle=null;
+		setContentView(R.layout.user_main);
+//		findViewById(R.id.user_close_button).setOnClickListener(this);
+		mPager=(ViewPager)findViewById(R.id.user_from_viewpage);
+		scrollView=(ViewPagerHorizontalScrollView)findViewById(R.id.user_from_scrollview);
+		adapter=new BasePageAdapter<Fragment>(this.getSupportFragmentManager());
+		mPager.setAdapter(adapter);
+		scrollView.setViewPager(mPager);
+		scrollView.setOnMyViewSelect(this);
+		addPages();
+	}
+	private final void addPages(){
+		List<String> list=new ArrayList<String>();
+		adapter.addModel(new UserBasicFragment());
+		list.add(UserBasicFragment.tag);
+		adapter.addModel(new UpdatePassFragment());
+		list.add(UpdatePassFragment.tag);
+		if(SystemParm.IS_DZ){
+			adapter.addModel(new UserAddFragment());
+			list.add(UserAddFragment.tag);
+			adapter.addModel(new ShowUserFragment());
+			list.add(ShowUserFragment.tag);
+		}
+		adapter.notifyDataSetChanged();
+		scrollView.setListViewText(list);
+		list.clear();
+		list=null;
+	}
+	@Override
+	public void onClick(View v) {
+		switch (v.getId()) {
+		default:
+			break;
+		}
+	}
+
+	@Override
+	public void onMyViewSelect(int tag) {
+		
+	}
+	@Override
+	public boolean onTouchEvent(MotionEvent event){
+		finish();
+		return true;
+	}
+	@Override
+	public void finish() {
+		super.finish();
+		overridePendingTransition(activityCloseEnterAnimation, activityCloseExitAnimation);
+	}
+}
